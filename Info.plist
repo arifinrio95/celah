@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>Celah</string>
+	<key>CFBundleExecutable</key>
+	<string>Celah</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>id.datasans.celah</string>
+	<key>CFBundleName</key>
+	<string>Celah</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Celah controls Spotify and Apple Music (play, pause, next track) from the notch.</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>Rio Arifin</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Celah uses your location to calculate prayer times for where you are.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Celah uses your location to calculate prayer times for where you are.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Celah records your microphone for meeting recordings.</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Celah reminds you of prayer times.</string>
+</dict>
+</plist>

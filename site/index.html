@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Celah — there's something living in your notch</title>
+<meta name="description" content="Celah turns the MacBook notch into a board for vibe coders: Keep Awake with the lid closed, AI usage, a Qur'an reader with Mushaf Mode, prayer times, tasks, clipboard, music and meeting recording. Free, native, local.">
+<meta property="og:title" content="Celah — there's something living in your notch">
+<meta property="og:description" content="The MacBook notch, built for vibe coders. Free for macOS.">
+<meta property="og:image" content="https://arifinrio95.github.io/celah/poster.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M4 0h56v14a22 22 0 0 1-22 22H26A22 22 0 0 1 4 14z' fill='%23111'/%3E%3Crect x='20' y='12' width='7' height='10' rx='3.5' fill='%23F5B84C'/%3E%3Crect x='37' y='12' width='7' height='10' rx='3.5' fill='%23F5B84C'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Amiri+Quran&display=swap">
+<style>
+:root{
+  --bg:#F6F1E9;--bg2:#EEE6DA;--card:#FFFDF9;--ink:#1C1A17;--ink2:rgba(28,26,23,.66);--ink3:rgba(28,26,23,.44);--ink4:rgba(28,26,23,.14);--track:rgba(28,26,23,.07);--line:rgba(28,26,23,.10);
+  --amber:#F5B84C;--accent:#E58A17;--accentInk:#B86A08;--claude:#D97757;--chatgpt:#10A37F;--green:#2F8F6B;--gold:#B8862B;--ok:#2E9E6B;--danger:#E5484D;--violet:#7E6BC4;
+  --shadow:0 1px 2px rgba(91,70,48,.08),0 18px 40px -18px rgba(91,70,48,.30);
+  --serif:"Instrument Serif",Georgia,serif;--sans:"Geist",system-ui,-apple-system,sans-serif;--mono:"Geist Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#111114;--bg2:#17171B;--card:#1F1F25;--ink:#F3EFE8;--ink2:rgba(243,239,232,.68);--ink3:rgba(243,239,232,.44);--ink4:rgba(243,239,232,.16);--track:rgba(243,239,232,.08);--line:rgba(243,239,232,.10);
+  --accentInk:#F5B84C;--shadow:0 1px 2px rgba(0,0,0,.4),0 20px 50px -20px rgba(0,0,0,.8);
+}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--amber);outline-offset:3px;border-radius:8px}
+.wrap{max-width:1140px;margin:0 auto;padding:0 clamp(16px,4vw,40px)}
+em{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--accentInk);letter-spacing:0}
+code{font-family:var(--mono);font-size:.86em;background:var(--track);padding:.12em .45em;border-radius:6px}
+.kick{font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.grain{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.05;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ------------------------------------------------ the notch (fixed, interactive) */
+#notch{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:50;width:200px;height:32px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#notch .lip{position:absolute;top:0;left:50%;transform:translateX(-50%);width:var(--lw,200px);height:32px;background:#000;border-radius:0 0 16px 16px;transition:width .5s cubic-bezier(.2,1.25,.3,1),border-radius .3s}
+#notch .lip::before,#notch .lip::after{content:"";position:absolute;top:0;width:14px;height:14px;opacity:var(--ears,0);transition:opacity .2s}
+#notch .lip::before{left:-14px;background:radial-gradient(circle at 0 100%,transparent 13.5px,#000 14px)}
+#notch .lip::after{right:-14px;background:radial-gradient(circle at 100% 100%,transparent 13.5px,#000 14px)}
+#notch .chin{position:absolute;top:31px;left:50%;width:74px;height:var(--chin,0px);transform:translateX(-50%);background:#000;border-radius:0 0 26px 26px;transition:height .35s cubic-bezier(.2,1.3,.3,1)}
+#notch .chin::before,#notch .chin::after{content:"";position:absolute;top:0;width:10px;height:10px}
+#notch .chin::before{left:-10px;background:radial-gradient(circle at 0 100%,transparent 9.5px,#000 10px)}
+#notch .chin::after{right:-10px;background:radial-gradient(circle at 100% 100%,transparent 9.5px,#000 10px)}
+#notch .face{position:absolute;top:calc(31px + var(--chin,0px)/2 - 10px);left:50%;width:46px;height:22px;transform:translateX(-50%);opacity:var(--faceA,0);transition:opacity .2s,top .35s cubic-bezier(.2,1.3,.3,1);pointer-events:none}
+#notch .lipText{position:absolute;top:0;height:32px;left:50%;transform:translateX(-50%);width:var(--lw,200px);display:flex;align-items:center;justify-content:space-between;padding:0 22px;color:#fff;opacity:var(--open,0);transition:opacity .25s;pointer-events:none;font-size:13px}
+#notch .lipText b{font-family:var(--serif);font-style:italic;font-weight:400;font-size:17px;display:flex;align-items:center;gap:7px}
+#notch .lipText b::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--amber)}
+#notch .lipText span{font-weight:600;opacity:.78;font-variant-numeric:tabular-nums}
+#tray{position:fixed;top:22px;left:50%;z-index:49;width:min(812px,calc(100vw - 20px));transform:translateX(-50%);clip-path:inset(0 -60px calc(100% - var(--rv,0%)) -60px);transition:clip-path .55s cubic-bezier(.2,.9,.25,1);pointer-events:none}
+#tray.open{--rv:100%;pointer-events:auto}
+#tray .paper{margin:0 0 50px;background:linear-gradient(var(--bg),var(--bg2));border-radius:6px 6px 30px 30px;padding:18px 12px 12px;box-shadow:0 26px 60px -20px rgba(0,0,0,.45),0 2px 4px rgba(0,0,0,.08);position:relative;transform:translateY(calc(-26px + var(--rvp,1)*26px)) perspective(900px) rotateX(calc(18deg - var(--rvp,1)*18deg));transform-origin:top;transition:transform .6s cubic-bezier(.2,1.1,.3,1)}
+#tray .paper::before{content:"";position:absolute;inset:0 0 auto;height:22px;border-radius:6px 6px 0 0;background:linear-gradient(rgba(0,0,0,.22),transparent)}
+#tray:not(.open) .paper{--rvp:0}
+.thead{display:flex;align-items:baseline;justify-content:space-between;padding:6px 6px 10px}
+.thead i{font-family:var(--serif);font-size:21px;font-style:italic}
+.thead small{color:var(--ink3);font-weight:600;font-size:12px;margin-left:8px}
+.pills{display:flex;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 11px;border-radius:13px;background:var(--track);font-size:11.5px;font-weight:600;color:var(--ink2);white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.75}
+.pill.on{background:var(--accent);color:#fff}
+.pill.rec::before{background:var(--danger);opacity:1}
+.mini{display:grid;grid-template-columns:1.32fr 1fr 1.1fr;gap:10px}
+.mini .c:nth-child(4){grid-column:span 1}
+.c{background:var(--card);border-radius:20px;padding:12px 14px;box-shadow:var(--shadow);border:.75px solid var(--line);position:relative;overflow:hidden;min-height:150px;opacity:0;transform:translateY(-30px) rotate(var(--tilt,0deg)) scale(.95);transition:opacity .3s,transform .55s cubic-bezier(.2,1.35,.3,1);transition-delay:calc(.12s + var(--i)*45ms)}
+#tray.open .c{opacity:1;transform:none}
+.c h4{margin:0 0 8px;font-size:9px;letter-spacing:.14em;font-weight:800;color:var(--ink3);display:flex;align-items:center;gap:6px;text-transform:uppercase}
+.c h4::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--dot,var(--ink3))}
+.c h4 span{margin-left:auto;letter-spacing:0;text-transform:none;font-weight:600;font-size:10px}
+.hint{position:fixed;top:44px;left:50%;transform:translateX(-50%);z-index:48;font-family:var(--mono);font-size:12px;color:var(--ink3);letter-spacing:.06em;display:flex;align-items:center;gap:8px;transition:opacity .4s;white-space:nowrap}
+.hint::before{content:"↑";animation:nudge 1.6s ease-in-out infinite}
+@keyframes nudge{50%{transform:translateY(-4px)}}
+body.peeked .hint{opacity:0}
+
+/* ------------------------------------------------ hero */
+.hero{position:relative;z-index:2;padding:150px 0 70px;text-align:center}
+.hero .kick{margin-bottom:22px}
+.hero h1{font-size:clamp(46px,8.2vw,108px);line-height:.95;letter-spacing:-.035em;margin:0 auto;font-weight:650;max-width:11.5em}
+.hero h1 em{font-size:1.08em}
+.hero p.lead{max-width:640px;margin:28px auto 0;font-size:clamp(17px,2vw,20px);color:var(--ink2);text-wrap:pretty}
+.cta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:36px}
+.btn{display:inline-flex;align-items:center;gap:10px;height:54px;padding:0 26px;border-radius:27px;font-weight:650;font-size:16.5px;text-decoration:none;transition:transform .2s cubic-bezier(.2,1.6,.3,1),box-shadow .2s;border:0;cursor:pointer;font-family:inherit}
+.btn:hover{transform:translateY(-2px) scale(1.02)}
+.btn:active{transform:scale(.96)}
+.btn.primary{background:var(--ink);color:var(--bg);box-shadow:0 14px 30px -12px rgba(0,0,0,.5)}
+.btn.ghost{background:var(--track);color:var(--ink)}
+.btn svg{width:18px;height:18px}
+.specs{margin-top:16px;font-size:13.5px;color:var(--ink3)}
+.cmd{display:flex;align-items:center;gap:10px;max-width:640px;margin:22px auto 0;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 10px 10px 18px;box-shadow:var(--shadow);text-align:left}
+.cmd code{background:none;padding:0;flex:1;overflow-x:auto;white-space:nowrap;font-size:13.5px;scrollbar-width:none}
+.cmd button{flex:none;height:36px;padding:0 14px;border-radius:10px;border:0;background:var(--track);color:var(--ink);font:600 13px var(--sans);cursor:pointer}
+.cmd button.done{background:var(--ok);color:#fff}
+
+/* ------------------------------------------------ film */
+.film{position:relative;z-index:2;padding:40px 0 30px}
+.screen{position:relative;border-radius:22px;overflow:hidden;background:#000;box-shadow:0 40px 90px -40px rgba(0,0,0,.65);aspect-ratio:16/9}
+.screen video{width:100%;height:100%;display:block;object-fit:cover}
+.screen .play{position:absolute;inset:0;display:grid;place-items:center;background:none;border:0;cursor:pointer}
+.screen .play span{width:92px;height:92px;border-radius:50%;background:rgba(255,253,249,.92);display:grid;place-items:center;box-shadow:0 20px 40px -10px rgba(0,0,0,.6);transition:transform .25s cubic-bezier(.2,1.6,.3,1)}
+.screen .play:hover span{transform:scale(1.08)}
+.screen .play svg{width:30px;height:30px;margin-left:5px;fill:#1C1A17}
+.screen.playing .play{display:none}
+.filmnote{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:14px;font-size:14px;color:var(--ink3)}
+.filmnote a{color:var(--ink2);font-weight:600}
+
+/* ------------------------------------------------ story */
+section{position:relative;z-index:2}
+.sec{padding:90px 0 20px}
+.sec h2{font-size:clamp(36px,5.4vw,64px);line-height:1;letter-spacing:-.03em;margin:12px 0 18px;font-weight:650;max-width:14em}
+.sec p.sub{color:var(--ink2);max-width:640px;font-size:18px;margin:0}
+.story{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:40px}
+.story figure{margin:0;background:var(--card);border-radius:22px;overflow:hidden;box-shadow:var(--shadow);border:.75px solid var(--line)}
+.story img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover}
+.story figcaption{padding:14px 18px 18px;font-size:15px;color:var(--ink2)}
+.story figcaption b{display:block;color:var(--ink);font-size:17px;margin-bottom:2px}
+
+/* ------------------------------------------------ features */
+.feats{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:44px}
+.f{grid-column:span 4;background:var(--card);border-radius:24px;padding:22px 22px 24px;box-shadow:var(--shadow);border:.75px solid var(--line);position:relative;overflow:hidden;min-height:300px;display:flex;flex-direction:column;transition:transform .35s cubic-bezier(.2,1.4,.3,1)}
+.f:hover{transform:translateY(-4px) rotate(-.3deg)}
+.f.wide{grid-column:span 8}
+.f .art{height:150px;display:grid;place-items:center;margin:4px 0 16px;position:relative}
+.f h3{margin:0 0 6px;font-size:22px;letter-spacing:-.01em;font-weight:650}
+.f p{margin:0;color:var(--ink2);font-size:15.5px}
+.f .tag{position:absolute;top:18px;right:18px;font:500 11px var(--mono);letter-spacing:.08em;color:var(--ink3);text-transform:uppercase}
+
+/* art: keep awake */
+.cupwrap{display:flex;gap:28px;align-items:flex-end}
+.steam path{fill:none;stroke:var(--amber);stroke-width:2.4;stroke-linecap:round;animation:steam 2.6s ease-in-out infinite;opacity:.8}
+.steam path:nth-child(2){animation-delay:-.9s}.steam path:nth-child(3){animation-delay:-1.7s}
+@keyframes steam{0%{transform:translateY(6px);opacity:0}40%{opacity:.85}100%{transform:translateY(-12px);opacity:0}}
+.laptopShut{width:150px;height:12px;border-radius:5px;background:linear-gradient(#C9CCD1,#A9ACB2);position:relative}
+.laptopShut::after{content:"";position:absolute;left:-8px;right:-8px;top:12px;height:7px;border-radius:0 0 6px 6px;background:#9EA1A7}
+.led{position:absolute;left:14px;top:22px;width:6px;height:6px;border-radius:50%;background:var(--ok);animation:blink 1.6s ease-in-out infinite;box-shadow:0 0 10px var(--ok)}
+@keyframes blink{50%{opacity:.25}}
+/* art: jelly */
+.jel{width:100%;max-width:330px;display:grid;gap:14px}
+.jrow{display:grid;gap:6px}
+.jrow b{display:flex;justify-content:space-between;font-size:14px}
+.jbar{height:18px;border-radius:9px;background:var(--track);overflow:hidden;position:relative}
+.jbar i{position:absolute;inset:0 auto 0 0;width:var(--v);background:var(--c);border-radius:9px 0 0 9px;animation:fill 2.4s cubic-bezier(.2,1,.3,1) both}
+.jbar i::after{content:"";position:absolute;right:-5px;top:0;bottom:0;width:10px;background:var(--c);border-radius:50%;animation:wob 1.3s ease-in-out infinite}
+@keyframes fill{from{width:0}}
+@keyframes wob{50%{transform:scaleX(.55) translateX(2px)}}
+/* art: vinyl */
+.sleeve{width:110px;height:110px;border-radius:12px;background:radial-gradient(circle at 30% 30%,#ffd58a 0,transparent 35%),linear-gradient(135deg,#ff7a3d,#8a2be2 62%,#1b1446);position:relative;z-index:2;box-shadow:6px 8px 20px -8px rgba(0,0,0,.6)}
+.disc{position:absolute;width:104px;height:104px;border-radius:50%;left:calc(50% - 10px);top:23px;background:repeating-radial-gradient(#141416 0 2px,#1d1d20 2px 4px);animation:spin 2.2s linear infinite;transform-origin:center}
+.disc::after{content:"";position:absolute;inset:34px;border-radius:50%;background:linear-gradient(135deg,#ff7a3d,#8a2be2)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.vin{position:relative;width:200px;height:150px;display:flex;align-items:center}
+/* art: quran */
+.ayah{font-family:"Amiri Quran",serif;font-size:34px;line-height:1.9;direction:rtl;color:var(--ink)}
+.f.quran{background:linear-gradient(#F8F1E1,#F3E9D2);color:#2A2117}
+.f.quran p{color:rgba(42,33,23,.7)}.f.quran .tag{color:rgba(42,33,23,.45)}
+.f.quran .ayah{color:#2A2117}
+@media (prefers-color-scheme:dark){.f.quran{background:linear-gradient(#1C2621,#15191A);color:#F3EFE8}.f.quran p{color:rgba(243,239,232,.7)}.f.quran .ayah{color:#F3EFE8}.f.quran .tag{color:rgba(243,239,232,.45)}}
+.lattice{position:absolute;inset:0;opacity:.09;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cg fill='none' stroke='%238A6A2E'%3E%3Crect x='14' y='14' width='16' height='16'/%3E%3Crect x='14' y='14' width='16' height='16' transform='rotate(45 22 22)'/%3E%3C/g%3E%3C/svg%3E")}
+.mushafbtn{display:inline-flex;gap:8px;align-items:center;margin-top:14px;font:600 13px var(--sans);color:#fff;background:var(--green);padding:8px 14px;border-radius:12px;width:max-content}
+/* art: sky */
+.sky svg{width:100%;max-width:300px}
+/* art: tasks */
+.tasks{display:grid;gap:9px;width:100%;max-width:300px}
+.task{display:flex;align-items:center;gap:10px;font-size:15px}
+.chk{width:18px;height:18px;border-radius:50%;border:1.6px solid var(--ink3);flex:none;position:relative}
+.task.done .chk{border-color:var(--ok);background:var(--ok);animation:pop 3s ease-in-out infinite}
+.task.done .chk::after{content:"";position:absolute;left:5px;top:2px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.task.done span{text-decoration:line-through;color:var(--ink3)}
+@keyframes pop{0%,60%{transform:scale(1)}65%{transform:scale(1.3)}72%{transform:scale(1)}}
+.lanes{display:flex;gap:4px;background:var(--track);border-radius:14px;padding:3px;font:800 9.5px var(--sans);letter-spacing:.06em;color:var(--ink3)}
+.lanes span{flex:1;text-align:center;padding:6px 0;border-radius:11px}
+.lanes .on{background:var(--amber);color:#fff}
+/* art: clipboard */
+.slips{display:grid;gap:8px;width:100%;max-width:310px}
+.slip{background:var(--track);border-radius:12px;padding:9px 12px;font-size:13.5px;display:flex;gap:10px;align-items:center;transition:transform .3s}
+.slip:nth-child(2){transform:rotate(-.6deg)}.slip:nth-child(3){transform:rotate(.5deg)}
+.slip small{display:block;color:var(--ink3);font-size:11px}
+.slip i{width:26px;height:26px;border-radius:50%;background:var(--card);flex:none}
+.slip.new{background:rgba(46,158,107,.14);animation:drop 3.2s cubic-bezier(.2,1.4,.3,1) infinite}
+@keyframes drop{0%{transform:translateY(-14px);opacity:0}12%,85%{transform:none;opacity:1}100%{opacity:1}}
+/* art: record */
+.wave{display:flex;gap:4px;align-items:center;height:70px}
+.wave i{width:5px;border-radius:3px;background:var(--danger);animation:wv 1s ease-in-out infinite;height:20%}
+@keyframes wv{50%{height:90%}}
+.recdot{width:16px;height:16px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 0 rgba(229,72,77,.5);animation:pulse 1.4s infinite;margin-right:14px}
+@keyframes pulse{70%{box-shadow:0 0 0 14px rgba(229,72,77,0)}100%{box-shadow:0 0 0 0 rgba(229,72,77,0)}}
+/* rings */
+.rings svg{width:140px;height:140px}
+
+/* ------------------------------------------------ safe zone */
+.safe{display:grid;grid-template-columns:1.1fr 1fr;gap:40px;align-items:center}
+.safe .diagram{background:var(--card);border-radius:24px;padding:26px;box-shadow:var(--shadow);border:.75px solid var(--line)}
+.safe .bar{height:40px;background:#000;border-radius:0 0 20px 20px;position:relative;display:flex;align-items:center;justify-content:space-between;padding:0 18px;color:#fff;font-size:12.5px}
+.safe .cam{position:absolute;left:50%;top:0;transform:translateX(-50%);width:26%;height:100%;border:2px dashed var(--amber);border-top:0;border-radius:0 0 16px 16px;display:grid;place-items:center;color:var(--amber);font:500 11px var(--mono)}
+.safe .row{display:flex;justify-content:space-between;margin-top:14px;gap:10px;font-size:12.5px}
+.safe .row span{background:var(--track);border-radius:12px;padding:6px 10px;color:var(--ink2)}
+.safe .row .gap{background:none;border:2px dashed var(--amber);color:var(--accentInk);flex:0 0 26%;text-align:center}
+
+/* ------------------------------------------------ install / faq */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:36px;counter-reset:s}
+.step{background:var(--card);border-radius:22px;padding:22px;box-shadow:var(--shadow);border:.75px solid var(--line);counter-increment:s}
+.step::before{content:counter(s);display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--bg);font-weight:700;margin-bottom:14px}
+.step h3{margin:0 0 6px;font-size:19px}
+.step p{margin:0;color:var(--ink2);font-size:15.5px}
+details{background:var(--card);border-radius:18px;border:.75px solid var(--line);padding:16px 20px;margin-top:10px;box-shadow:var(--shadow)}
+summary{cursor:pointer;font-weight:650;font-size:17px;list-style:none;display:flex;justify-content:space-between;gap:10px}
+summary::after{content:"+";font-weight:400;font-size:22px;line-height:1;color:var(--ink3);transition:transform .25s}
+details[open] summary::after{transform:rotate(45deg)}
+details p,details ul{color:var(--ink2);margin:10px 0 0;font-size:15.5px}
+details li{margin:4px 0}
+.faq{max-width:820px}
+footer{position:relative;z-index:2;padding:80px 0 60px;text-align:center;color:var(--ink3);font-size:14px}
+footer .big{font-family:var(--serif);font-style:italic;font-size:clamp(40px,7vw,80px);color:var(--ink);line-height:1;margin-bottom:22px}
+footer a{color:var(--ink2)}
+
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s,transform .8s cubic-bezier(.2,1,.3,1)}
+.reveal.in{opacity:1;transform:none}
+
+@media (max-width:900px){
+  .story,.steps{grid-template-columns:1fr}
+  .f,.f.wide{grid-column:span 12}
+  .safe{grid-template-columns:1fr}
+  .mini{grid-template-columns:1fr 1fr}
+  .mini .c:nth-child(n+5){display:none}
+  .pills .pill:not(.on){display:none}
+}
+@media (max-width:560px){
+  .hero{padding-top:120px}
+  .thead small{display:none}
+}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<!-- the notch: hover (or tap) it -->
+<div id="notch" role="button" tabindex="0" aria-label="Open the Celah board">
+  <div class="lip"></div>
+  <div class="chin"></div>
+  <svg class="face" viewBox="0 0 46 22" aria-hidden="true"><g id="eyes" fill="#F5B84C"><rect id="eL" x="12" y="5" width="5.2" height="7.2" rx="2.6"/><rect id="eR" x="29" y="5" width="5.2" height="7.2" rx="2.6"/></g><path id="mouth" d="M19.6 15.6 Q23 18.6 26.4 15.6" stroke="#F5B84C" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+  <div class="lipText"><b>celah</b><span id="clock">01:47</span></div>
+</div>
+<div class="hint" id="hint">hover the notch</div>
+<div id="tray" aria-hidden="true">
+  <div class="paper">
+    <div class="thead"><div><i id="dayname">Friday</i><small id="daydate">16 Oct · Tangerang Selatan</small></div>
+      <div class="pills"><span class="pill rec">Record</span><span class="pill on">1:59:42</span><span class="pill">Clipboard 84</span></div></div>
+    <div class="mini">
+      <div class="c" style="--i:0;--tilt:-2deg;--dot:#c0602a"><h4>Music<span>Spotify ↗</span></h4>
+        <div class="vin" style="height:100px;width:100%"><div class="sleeve" style="width:76px;height:76px"></div><div class="disc" style="width:72px;height:72px;left:40px;top:14px"></div>
+        <div style="margin-left:56px;font-size:13px"><b>Midnight Drive</b><br><span style="color:var(--ink2)">Nova Reyes</span></div></div></div>
+      <div class="c" style="--i:1;--tilt:1.6deg;--dot:var(--claude)"><h4>AI usage<span>just now</span></h4>
+        <div class="jel" style="gap:10px"><div class="jrow"><b style="font-size:12.5px">Claude <span>74%</span></b><div class="jbar" style="height:14px"><i style="--v:74%;--c:var(--amber)"></i></div></div>
+        <div class="jrow"><b style="font-size:12.5px">ChatGPT <span>52%</span></b><div class="jbar" style="height:14px"><i style="--v:52%;--c:var(--chatgpt)"></i></div></div></div></div>
+      <div class="c" style="--i:2;--tilt:-1.2deg;--dot:var(--amber)"><h4>Prayer<span>sunrise 05:30</span></h4>
+        <div style="font-family:var(--serif);font-style:italic;color:var(--accentInk);font-size:17px">Fajr</div>
+        <div id="cd" style="font-size:30px;font-weight:300;letter-spacing:-.02em;font-variant-numeric:tabular-nums">02:37:28</div></div>
+      <div class="c" style="--i:3;--tilt:2deg"><h4>Tasks<span>3 active ↗</span></h4>
+        <div class="tasks" style="gap:6px"><div class="task done"><div class="chk"></div><span style="font-size:13px">Review the agent’s PR</span></div><div class="task"><div class="chk"></div><span style="font-size:13px">Record launch video</span></div></div></div>
+      <div class="c" style="--i:4;--tilt:-1.8deg;--dot:#F5A524"><h4>System<span>Apple M4</span></h4><div style="font-size:13px;color:var(--ink2)">CPU <b style="color:var(--ink)">31%</b> · RAM <b style="color:var(--ink)">11.8 GB</b></div></div>
+      <div class="c" style="--i:5;--tilt:1.3deg;--dot:var(--green);background:linear-gradient(#F8F1E1,#F3E9D2);color:#2A2117"><h4 style="color:rgba(42,33,23,.45)">Qur’an<span>1:2 ↗</span></h4><div class="ayah" style="font-size:20px;line-height:1.7;color:#2A2117">ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ</div></div>
+    </div>
+  </div>
+</div>
+
+<header class="hero wrap">
+  <div class="kick">Celah · v1.0 · free for macOS</div>
+  <h1>There’s something living in your <em>notch.</em></h1>
+  <p class="lead">Celah (Indonesian for <i>the gap</i>) turns the MacBook notch into a board for vibe coders. Keep your agent running with the lid closed, watch your AI limits, read a verse instead of doomscrolling. All one hover away.</p>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/arifinrio95/celah/releases/latest/download/Celah.zip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.4 2-3.5 2-3.6-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.9-3-.8C7 7.3 5.5 8.3 4.7 9.8c-1.7 2.9-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8 1.5 0 1.9.8 3.1.8 1.3 0 2.1-1.2 2.9-2.4.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.9-1.1-2.9-4.2zM14.2 5.5c.6-.8 1.1-1.8 1-2.9-1 0-2.1.6-2.8 1.4-.6.7-1.1 1.8-1 2.8 1.1.1 2.1-.5 2.8-1.3z"/></svg>Download for Mac</a>
+    <a class="btn ghost" href="#film"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Watch the film · 60s</a>
+  </div>
+  <div class="cmd"><code id="cmd">curl -fsSL https://raw.githubusercontent.com/arifinrio95/celah/main/install.sh | bash</code><button id="copy">Copy</button></div>
+  <div class="specs">macOS 14 Sonoma or newer · Apple silicon · best on a MacBook with a notch · <a href="https://github.com/arifinrio95/celah">source on GitHub</a></div>
+</header>
+
+<section class="film wrap" id="film">
+  <div class="screen reveal" id="screen">
+    <video id="video" src="celah-film.mp4" poster="poster.jpg" playsinline preload="metadata"></video>
+    <button class="play" id="play" aria-label="Play the film"><span><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></span></button>
+  </div>
+  <div class="filmnote"><span>A 60-second film, rendered in three.js. Sound on.</span><span><a href="celah-film-vertical.mp4">Vertical 9:16 version ↗</a></span></div>
+</section>
+
+<section class="sec wrap">
+  <div class="kick reveal">The vibe coder walk</div>
+  <h2 class="reveal">Lid open, so the agent keeps <em>running.</em> Everyone else: is he okay?</h2>
+  <p class="sub reveal">You know the walk. Closing the lid kills the agent, so you carry the MacBook open across the café. Then you wait, and scroll. Celah fixes the first and gently replaces the second.</p>
+  <div class="story">
+    <figure class="reveal"><img src="still-stare.jpg" alt="A café regular staring, mouth open" loading="lazy"><figcaption><b>Before</b>Carrying it open, so the session doesn’t die.</figcaption></figure>
+    <figure class="reveal"><img src="still-awake.jpg" alt="The Keep Awake panel with the lid-closed option selected" loading="lazy"><figcaption><b>Keep Awake</b>Pick “Lid closed too”. One password, once.</figcaption></figure>
+    <figure class="reveal"><img src="still-walk.jpg" alt="Walking with the laptop shut and a coffee; a bubble says Agent still running" loading="lazy"><figcaption><b>After</b>Same walk. Nobody stares. Agent still running.</figcaption></figure>
+  </div>
+</section>
+
+<section class="sec wrap" id="features">
+  <div class="kick reveal">On the board</div>
+  <h2 class="reveal">Everything a vibe coder <em>glances at.</em></h2>
+  <div class="feats">
+    <article class="f wide reveal"><span class="tag">01 · Keep Awake</span>
+      <div class="art"><div class="cupwrap">
+        <svg width="110" height="120" viewBox="0 0 110 120" aria-hidden="true"><g class="steam"><path d="M38 48c-6-8 6-12 0-22"/><path d="M54 48c-6-8 6-12 0-22"/><path d="M70 48c-6-8 6-12 0-22"/></g><path d="M18 56h68l-6 40c-2 10-12 14-28 14S26 106 24 96z" fill="var(--amber)"/><path d="M86 64h6a12 12 0 0 1 0 24h-8" fill="none" stroke="var(--amber)" stroke-width="7"/><rect x="8" y="112" width="92" height="6" rx="3" fill="var(--amber)" opacity=".8"/></svg>
+        <div style="position:relative;padding-bottom:24px"><svg width="70" height="64" viewBox="0 0 70 64" aria-hidden="true" style="position:absolute;left:44px;top:-70px"><g class="steam"><path d="M26 30c-4-6 4-8 0-15"/><path d="M38 30c-4-6 4-8 0-15"/></g><path d="M14 34h40l-4 24c-1 5-6 6-16 6s-15-1-16-6z" fill="var(--amber)"/></svg><div class="laptopShut"></div><span class="led"></span></div>
+      </div></div>
+      <h3>Close the lid. The agent keeps going.</h3>
+      <p>Stay awake, or stay awake with the lid shut, for 1, 2, 4 hours or until you say so. It turns itself off below 15% battery or when the Mac runs hot. Set up once, never asked for a password again.</p></article>
+    <article class="f reveal"><span class="tag">02 · AI usage</span>
+      <div class="art"><div class="jel">
+        <div class="jrow"><b>Claude <span>74%</span></b><div class="jbar"><i style="--v:74%;--c:var(--amber)"></i></div></div>
+        <div class="jrow"><b>ChatGPT <span>52%</span></b><div class="jbar"><i style="--v:52%;--c:var(--chatgpt)"></i></div></div></div></div>
+      <h3>Know your limits before you hit them.</h3><p>Five-hour and weekly windows for Claude and Codex, with reset times. Bars turn amber, then red.</p></article>
+    <article class="f quran wide reveal"><div class="lattice"></div><span class="tag">03 · Qur’an</span>
+      <div class="art" style="height:auto;min-height:150px"><div class="ayah">ٱلرَّحْمَٰنِ ٱلرَّحِيمِ ۝٣</div></div>
+      <h3 style="position:relative">Waiting on the agent? Read one verse instead.</h3>
+      <p style="position:relative">One ayah at a time in Uthmani script with translation, your place saved. Want more? <b>Mushaf Mode</b> opens a big reading window: Ayah or Surah view, all 114 surahs, adjustable script, arrow keys.</p>
+      <span class="mushafbtn" style="position:relative">⤢ Mushaf Mode</span></article>
+    <article class="f reveal"><span class="tag">04 · Prayer</span>
+      <div class="art sky"><svg viewBox="0 0 300 120" aria-hidden="true"><path d="M20 100 Q150 -10 280 100" fill="none" stroke="var(--ink4)" stroke-width="1.5" stroke-dasharray="3 6"/><g fill="var(--ink2)"><circle cx="46" cy="76" r="4" fill="var(--amber)"/><circle cx="100" cy="42" r="3.5"/><circle cx="150" cy="34" r="3.5"/><circle cx="200" cy="42" r="3.5"/><circle cx="254" cy="76" r="3.5"/></g><g font-family="Geist" font-size="10" font-weight="700" fill="var(--ink3)" text-anchor="middle"><text x="46" y="116" fill="var(--accentInk)">FAJR</text><text x="100" y="116">DHUHR</text><text x="150" y="116">ASR</text><text x="200" y="116">MAGHRIB</text><text x="254" y="116">ISHA</text></g><circle r="8" fill="var(--violet)"><animateMotion dur="9s" repeatCount="indefinite" path="M20 100 Q150 -10 280 100"/></circle></svg></div>
+      <h3>Counting down to the next prayer.</h3><p>Kemenag method, 27 Indonesian cities or GPS, gentle reminders before each prayer.</p></article>
+    <article class="f reveal"><span class="tag">05 · Tasks</span>
+      <div class="art"><div class="tasks"><div class="lanes"><span>BACKLOG</span><span class="on">TO DO</span><span>DOING</span><span>DONE</span></div>
+        <div class="task done"><div class="chk"></div><span>Review the agent’s PR</span></div><div class="task"><div class="chk"></div><span>Record launch video</span></div><div class="task"><div class="chk"></div><span>Write release notes</span></div></div></div>
+      <h3>Kanban, one glance up.</h3><p>Projects, four lanes, quick add. Tick a task and it pops to the next lane.</p></article>
+    <article class="f reveal"><span class="tag">06 · Clipboard</span>
+      <div class="art"><div class="slips"><div class="slip new"><i></i><div>Bismillah, deploy.<small>Notes · just now</small></div></div><div class="slip"><i></i><div>github.com/you/notch/pull/42<small>Safari · 01:20</small></div></div><div class="slip"><i></i><div>error: cannot find ‘recorder’<small>Terminal · 01:44</small></div></div></div></div>
+      <h3>Every copy, one click back.</h3><p>Text and images, searchable, pinnable. Password-manager items are never kept.</p></article>
+    <article class="f reveal"><span class="tag">07 · Music</span>
+      <div class="art"><div class="vin"><div class="sleeve"></div><div class="disc"></div></div></div>
+      <h3>Spotify and Apple Music, in place.</h3><p>The record slides out of its sleeve and spins while it plays. Play, skip, scrub.</p></article>
+    <article class="f reveal"><span class="tag">08 · Record</span>
+      <div class="art"><div style="display:flex;align-items:center"><span class="recdot"></span><div class="wave" id="wave"></div></div></div>
+      <h3>Record the meeting, hand it to your agent.</h3><p>System audio and mic as two files. One click opens Claude Code with the folder and prompt ready.</p></article>
+    <article class="f reveal"><span class="tag">09 · System</span>
+      <div class="art rings"><svg viewBox="0 0 140 140" aria-hidden="true"><g fill="none" stroke-linecap="round" stroke-width="11" transform="rotate(-90 70 70)"><circle cx="70" cy="70" r="60" stroke="#F5A524" opacity=".18"/><circle cx="70" cy="70" r="60" stroke="#F5A524" stroke-dasharray="117 377"/><circle cx="70" cy="70" r="45" stroke="#E5735A" opacity=".18"/><circle cx="70" cy="70" r="45" stroke="#E5735A" stroke-dasharray="209 283"/><circle cx="70" cy="70" r="30" stroke="#3AA7A0" opacity=".18"/><circle cx="70" cy="70" r="30" stroke="#3AA7A0" stroke-dasharray="113 189"/></g></svg></div>
+      <h3>CPU, RAM, storage.</h3><p>Three rings. That’s it.</p></article>
+  </div>
+</section>
+
+<section class="sec wrap">
+  <div class="safe">
+    <div>
+      <div class="kick reveal">Design note</div>
+      <h2 class="reveal">Nothing lives under the <em>camera.</em></h2>
+      <p class="sub reveal">The physical notch is a hole in your screen, so Celah treats it as one. The lid stretches around it, the creature sits in a chin just below it, and every label and button stays on either side, measured from your Mac’s real notch. Pick Porcelain (paper under the black notch) or Ink (smoked glass).</p>
+    </div>
+    <div class="diagram reveal">
+      <div class="bar"><span><i style="font-family:var(--serif);font-size:16px">celah</i></span><div class="cam">camera</div><span>01:47</span></div>
+      <div class="row"><span>Friday · 16 Oct</span><span class="gap">◕‿◕</span><span>Record · Awake · Clipboard</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec wrap" id="install">
+  <div class="kick reveal">Install</div>
+  <h2 class="reveal">Three steps, then <em>hover.</em></h2>
+  <div class="steps">
+    <div class="step reveal"><h3>Download</h3><p>Run the one-liner above, or grab <a href="https://github.com/arifinrio95/celah/releases/latest/download/Celah.zip">Celah.zip</a> and move Celah.app to Applications.</p></div>
+    <div class="step reveal"><h3>Open it</h3><p>Celah isn’t notarized yet. The installer clears the quarantine flag; by hand, right-click Celah.app › Open the first time.</p></div>
+    <div class="step reveal"><h3>Allow what you use</h3><p>Music control, notifications, and only if you want them: location, microphone, accessibility for auto-paste.</p></div>
+  </div>
+  <div class="faq" style="margin-top:40px">
+    <details class="reveal"><summary>Is my data sent anywhere?</summary><p>No servers of our own, no analytics, no account. For AI usage Celah reads the sign-ins already on your Mac (Claude Code’s Keychain item, Codex’s <code>~/.codex/auth.json</code>) and sends each one only to its own provider to ask for your usage.</p></details>
+    <details class="reveal"><summary>How does lid-closed Keep Awake work?</summary><p>The first time, it asks for your administrator password once to install <code>/etc/sudoers.d/celah-pmset</code>, which allows exactly <code>pmset -a disablesleep 0/1</code> and nothing else. Sleep is restored when you turn it off or quit, when the battery drops below 15%, or when the Mac runs hot. Delete that file to revoke.</p></details>
+    <details class="reveal"><summary>Does it work without a notch?</summary><p>Yes. On displays without a notch the board hangs from the top centre of the screen. It shines on a MacBook with one.</p></details>
+    <details class="reveal"><summary>Intel Mac? Older macOS?</summary><p>Celah is built for Apple silicon and needs macOS 14 Sonoma or newer. You can build it yourself from source with the Xcode Command Line Tools.</p></details>
+    <details class="reveal"><summary>Claude usage says “not signed in”.</summary><p>Run <code>claude auth login</code> once in Terminal. Celah reads the same sign-in Claude Code uses.</p></details>
+  </div>
+</section>
+
+<footer class="wrap">
+  <div class="big">Mind the gap.</div>
+  <p><a href="https://github.com/arifinrio95/celah">GitHub</a> · <a href="https://github.com/arifinrio95/celah/releases">Releases</a> · MIT · made by Rio Arifin</p>
+</footer>
+
+<script>
+(() => {
+  const notch = document.getElementById('notch'), tray = document.getElementById('tray'), hint = document.getElementById('hint');
+  const eL = document.getElementById('eL'), eR = document.getElementById('eR'), mouth = document.getElementById('mouth');
+  const fine = matchMedia('(hover:hover) and (pointer:fine)').matches;
+  let open = false, prox = 0, mx = innerWidth / 2, my = 300, closeT;
+  const lipW = () => Math.min(840, innerWidth - 8);
+  function setOpen(v) {
+    if (v === open) return;
+    open = v;
+    notch.style.setProperty('--lw', v ? lipW() + 'px' : '200px');
+    notch.style.setProperty('--ears', v ? 1 : 0);
+    notch.style.setProperty('--open', v ? 1 : 0);
+    notch.querySelector('.lip').style.borderRadius = v ? '0 0 20px 20px' : '0 0 16px 16px';
+    tray.classList.toggle('open', v);
+    tray.setAttribute('aria-hidden', !v);
+    if (v) { document.body.classList.add('peeked'); mood('happy', 1100); }
+    paint();
+  }
+  function paint() {
+    const chin = open ? 25 : prox * 18;
+    notch.style.setProperty('--chin', chin + 'px');
+    notch.style.setProperty('--faceA', open ? 1 : Math.max(0, (prox - .3) / .4));
+    // eyes follow the cursor
+    const r = notch.getBoundingClientRect(), cx = r.left + r.width / 2, cy = 31 + chin / 2;
+    const dx = mx - cx, dy = my - cy, d = Math.max(1, Math.hypot(dx, dy)), k = Math.min(1, d / 260);
+    const ox = dx / d * k * 2.4, oy = Math.max(-.6, Math.min(1, dy / d * k)) * 1.8;
+    eL.setAttribute('transform', `translate(${ox} ${oy})`); eR.setAttribute('transform', `translate(${ox} ${oy})`);
+    mouth.setAttribute('transform', `translate(${ox * .4} ${oy * .4})`);
+  }
+  let moodT;
+  function mood(m, ms) {
+    clearTimeout(moodT);
+    const happy = m === 'happy';
+    for (const e of [eL, eR]) { e.setAttribute('height', happy ? 2.6 : 7.2); e.setAttribute('y', happy ? 7 : 5); }
+    mouth.setAttribute('d', happy ? 'M18.5 15 Q23 21 27.5 15 Z' : 'M19.6 15.6 Q23 18.6 26.4 15.6');
+    mouth.setAttribute('fill', happy ? '#F5B84C' : 'none');
+    if (ms) moodT = setTimeout(() => mood('neutral'), ms);
+  }
+  // blink
+  setInterval(() => { if (eL.getAttribute('height') !== '7.2') return; for (const e of [eL, eR]) { e.setAttribute('height', 1); e.setAttribute('y', 8.1); } setTimeout(() => { for (const e of [eL, eR]) { e.setAttribute('height', 7.2); e.setAttribute('y', 5); } }, 120); }, 3600);
+  addEventListener('pointermove', e => {
+    mx = e.clientX; my = e.clientY;
+    if (!fine) return;
+    const r = notch.getBoundingClientRect();
+    const dx = Math.max(0, Math.abs(mx - (r.left + r.width / 2)) - 100), dy = Math.max(0, my - 32);
+    prox = open ? 0 : Math.max(0, Math.min(1, 1 - (Math.hypot(dx, dy) - 6) / 220));
+    if (prox > .3) document.body.classList.add('peeked');
+    const overNotch = my < 34 + (prox > .6 ? 18 : 0) && Math.abs(mx - innerWidth / 2) < (open ? lipW() / 2 : 106);
+    const tb = tray.getBoundingClientRect(), overTray = open && mx > tb.left - 10 && mx < tb.right + 10 && my < tb.bottom - 40;
+    if (overNotch) { clearTimeout(closeT); setOpen(true); }
+    else if (open && !overTray) { clearTimeout(closeT); closeT = setTimeout(() => setOpen(false), 350); }
+    else if (overTray) clearTimeout(closeT);
+    paint();
+  }, { passive: true });
+  notch.addEventListener('click', () => { if (!fine) setOpen(!open); else mood('happy', 1200); });
+  notch.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(!open); } if (e.key === 'Escape') setOpen(false); });
+  addEventListener('scroll', () => { if (open && !fine) setOpen(false); }, { passive: true });
+  addEventListener('resize', () => { if (open) notch.style.setProperty('--lw', lipW() + 'px'); });
+  if (!fine) hint.textContent = 'tap the notch';
+
+  // the board's clock and countdown run for real
+  const pad = n => String(n).padStart(2, '0');
+  const fajr = new Date(); fajr.setHours(4, 16, 0, 0); if (fajr < new Date()) fajr.setDate(fajr.getDate() + 1);
+  function tick() {
+    const now = new Date();
+    document.getElementById('clock').textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
+    document.getElementById('dayname').textContent = now.toLocaleDateString('en-US', { weekday: 'long' });
+    document.getElementById('daydate').textContent = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    let s = Math.max(0, Math.floor((fajr - now) / 1000));
+    document.getElementById('cd').textContent = `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s % 3600 / 60))}:${pad(s % 60)}`;
+  }
+  tick(); setInterval(tick, 1000);
+
+  // copy the installer
+  const copy = document.getElementById('copy');
+  copy.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(document.getElementById('cmd').textContent); copy.textContent = 'Copied'; copy.classList.add('done'); }
+    catch { copy.textContent = 'Select & copy'; }
+    setTimeout(() => { copy.textContent = 'Copy'; copy.classList.remove('done'); }, 1600);
+  });
+
+  // film
+  const v = document.getElementById('video'), screen = document.getElementById('screen');
+  document.getElementById('play').addEventListener('click', () => { v.controls = true; v.play(); screen.classList.add('playing'); });
+
+  // waveform bars
+  const wave = document.getElementById('wave');
+  for (let i = 0; i < 22; i++) { const b = document.createElement('i'); b.style.animationDelay = `${-(i * 137 % 1000) / 1000}s`; b.style.animationDuration = `${.7 + (i * 53 % 60) / 100}s`; wave.append(b); }
+
+  // reveal on scroll
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+})();
+</script>
+</body>
+</html>
