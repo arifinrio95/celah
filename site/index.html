@@ -41,7 +41,7 @@ code{font-family:var(--mono);font-size:.86em;background:var(--track);padding:.12
 #notch .lip::before,#notch .lip::after{content:"";position:absolute;top:0;width:14px;height:14px;opacity:var(--ears,0);transition:opacity .2s}
 #notch .lip::before{left:-14px;background:radial-gradient(circle at 0 100%,transparent 13.5px,#000 14px)}
 #notch .lip::after{right:-14px;background:radial-gradient(circle at 100% 100%,transparent 13.5px,#000 14px)}
-#notch .chin{position:absolute;top:31px;left:50%;width:74px;height:var(--chin,0px);transform:translateX(-50%);background:#000;border-radius:0 0 26px 26px;transition:height .35s cubic-bezier(.2,1.3,.3,1)}
+#notch .chin{opacity:var(--chinA,0);position:absolute;top:31px;left:50%;width:74px;height:var(--chin,0px);transform:translateX(-50%);background:#000;border-radius:0 0 26px 26px;transition:height .35s cubic-bezier(.2,1.3,.3,1)}
 #notch .chin::before,#notch .chin::after{content:"";position:absolute;top:0;width:10px;height:10px}
 #notch .chin::before{left:-10px;background:radial-gradient(circle at 0 100%,transparent 9.5px,#000 10px)}
 #notch .chin::after{right:-10px;background:radial-gradient(circle at 100% 100%,transparent 9.5px,#000 10px)}
@@ -73,7 +73,7 @@ code{font-family:var(--mono);font-size:.86em;background:var(--track);padding:.12
 .hint{position:fixed;top:44px;left:50%;transform:translateX(-50%);z-index:48;font-family:var(--mono);font-size:12px;color:var(--ink3);letter-spacing:.06em;display:flex;align-items:center;gap:8px;transition:opacity .4s;white-space:nowrap}
 .hint::before{content:"↑";animation:nudge 1.6s ease-in-out infinite}
 @keyframes nudge{50%{transform:translateY(-4px)}}
-body.peeked .hint{opacity:0}
+body.peeked .hint,body.scrolled .hint{opacity:0}
 
 /* ------------------------------------------------ hero */
 .hero{position:relative;z-index:2;padding:150px 0 70px;text-align:center}
@@ -122,7 +122,7 @@ section{position:relative;z-index:2}
 .f{grid-column:span 4;background:var(--card);border-radius:24px;padding:22px 22px 24px;box-shadow:var(--shadow);border:.75px solid var(--line);position:relative;overflow:hidden;min-height:300px;display:flex;flex-direction:column;transition:transform .35s cubic-bezier(.2,1.4,.3,1)}
 .f:hover{transform:translateY(-4px) rotate(-.3deg)}
 .f.wide{grid-column:span 8}
-.f .art{height:150px;display:grid;place-items:center;margin:4px 0 16px;position:relative}
+.f .art{min-height:150px;display:grid;place-items:center;margin:4px 0 16px;position:relative}
 .f h3{margin:0 0 6px;font-size:22px;letter-spacing:-.01em;font-weight:650}
 .f p{margin:0;color:var(--ink2);font-size:15.5px}
 .f .tag{position:absolute;top:18px;right:18px;font:500 11px var(--mono);letter-spacing:.08em;color:var(--ink3);text-transform:uppercase}
@@ -255,7 +255,7 @@ footer a{color:var(--ink2)}
         <div class="jel" style="gap:10px"><div class="jrow"><b style="font-size:12.5px">Claude <span>74%</span></b><div class="jbar" style="height:14px"><i style="--v:74%;--c:var(--amber)"></i></div></div>
         <div class="jrow"><b style="font-size:12.5px">ChatGPT <span>52%</span></b><div class="jbar" style="height:14px"><i style="--v:52%;--c:var(--chatgpt)"></i></div></div></div></div>
       <div class="c" style="--i:2;--tilt:-1.2deg;--dot:var(--amber)"><h4>Prayer<span>sunrise 05:30</span></h4>
-        <div style="font-family:var(--serif);font-style:italic;color:var(--accentInk);font-size:17px">Fajr</div>
+        <div id="pname" style="font-family:var(--serif);font-style:italic;color:var(--accentInk);font-size:17px">Fajr</div>
         <div id="cd" style="font-size:30px;font-weight:300;letter-spacing:-.02em;font-variant-numeric:tabular-nums">02:37:28</div></div>
       <div class="c" style="--i:3;--tilt:2deg"><h4>Tasks<span>3 active ↗</span></h4>
         <div class="tasks" style="gap:6px"><div class="task done"><div class="chk"></div><span style="font-size:13px">Review the agent’s PR</span></div><div class="task"><div class="chk"></div><span style="font-size:13px">Record launch video</span></div></div></div>
@@ -397,6 +397,7 @@ footer a{color:var(--ink2)}
   function paint() {
     const chin = open ? 25 : prox * 18;
     notch.style.setProperty('--chin', chin + 'px');
+    notch.style.setProperty('--chinA', chin > .5 ? 1 : 0);
     notch.style.setProperty('--faceA', open ? 1 : Math.max(0, (prox - .3) / .4));
     // eyes follow the cursor
     const r = notch.getBoundingClientRect(), cx = r.left + r.width / 2, cy = 31 + chin / 2;
@@ -432,15 +433,22 @@ footer a{color:var(--ink2)}
   }, { passive: true });
   notch.addEventListener('click', () => { if (!fine) setOpen(!open); else mood('happy', 1200); });
   notch.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(!open); } if (e.key === 'Escape') setOpen(false); });
-  addEventListener('scroll', () => { if (open && !fine) setOpen(false); }, { passive: true });
+  addEventListener('scroll', () => { if (open && !fine) setOpen(false); document.body.classList.toggle('scrolled', scrollY > 40); }, { passive: true });
   addEventListener('resize', () => { if (open) notch.style.setProperty('--lw', lipW() + 'px'); });
   if (!fine) hint.textContent = 'tap the notch';
 
   // the board's clock and countdown run for real
   const pad = n => String(n).padStart(2, '0');
-  const fajr = new Date(); fajr.setHours(4, 16, 0, 0); if (fajr < new Date()) fajr.setDate(fajr.getDate() + 1);
+  // prayer times for Jakarta, as a sample; the app calculates them for your city
+  const PR = [['Fajr', 4, 16], ['Dhuhr', 11, 41], ['Asr', 14, 46], ['Maghrib', 17, 48], ['Isha', 18, 58]];
+  function nextPrayer(now) {
+    for (const [n, h, m] of PR) { const d = new Date(now); d.setHours(h, m, 0, 0); if (d > now) return [n, d]; }
+    const d = new Date(now); d.setDate(d.getDate() + 1); d.setHours(4, 16, 0, 0); return ['Fajr', d];
+  }
   function tick() {
     const now = new Date();
+    const [pn, fajr] = nextPrayer(now);
+    document.getElementById('pname').textContent = pn;
     document.getElementById('clock').textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
     document.getElementById('dayname').textContent = now.toLocaleDateString('en-US', { weekday: 'long' });
     document.getElementById('daydate').textContent = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
