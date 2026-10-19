@@ -8,6 +8,7 @@ struct BoardView: View {
     @EnvironmentObject var clip: ClipboardStore
     @EnvironmentObject var awake: KeepAwake
     @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var recorder: MeetingRecorder
 
     static let gap: CGFloat = 10
     static let weights: [BoardModule: CGFloat] = [.music: 1.32, .usage: 1.0, .prayer: 1.1, .tasks: 1.2, .system: 0.86, .quran: 1.32]
@@ -35,6 +36,14 @@ struct BoardView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
+            .overlay(alignment: .top) {
+                if let n = recorder.notice {
+                    NoticeBanner(notice: n, open: { recorder.openSettings($0) }, close: { recorder.notice = nil })
+                        .padding(.top, 4)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .animation(D.springIn, value: recorder.notice)
             .animation(D.springIn, value: clip.panelOpen)
             .animation(D.springIn, value: awake.panelOpen)
         }
@@ -136,7 +145,7 @@ struct BoardHeader: View {
         return HStack(spacing: 6) {
             if labels {
                 Pill(symbol: recorder.isRecording ? "stop.fill" : "record.circle",
-                     text: recorder.isRecording ? Fmt.short(clock.now.timeIntervalSince(recorder.startedAt ?? clock.now)) : "Record",
+                     text: recorder.isRecording ? Fmt.short(clock.now.timeIntervalSince(recorder.startedAt ?? clock.now)) : (recorder.isStarting ? "Starting…" : "Record"),
                      on: recorder.isRecording, tint: p.danger) { recorder.toggle(); ctl.cheer(recorder.isRecording ? .wired : .happy) }
                     .help(recorder.isRecording ? "Stop recording" : "Record this meeting")
                 Pill(symbol: awake.isActive ? "cup.and.saucer.fill" : "cup.and.saucer",
@@ -161,4 +170,33 @@ struct BoardHeader: View {
 
     private var weekday: String { let f = DateFormatter(); f.locale = Fmt.locale; f.dateFormat = "EEEE"; return f.string(from: clock.now) }
     private var dayMonth: String { let f = DateFormatter(); f.locale = Fmt.locale; f.dateFormat = "d MMM"; return f.string(from: clock.now) }
+}
+
+/// A note from the recorder: what happened, and the one setting that fixes it.
+struct NoticeBanner: View {
+    let notice: MeetingRecorder.Notice
+    let open: (String) -> Void
+    let close: () -> Void
+
+    var body: some View {
+        let p = D.p
+        HStack(spacing: 10) {
+            Image(systemName: notice.isError ? "exclamationmark.triangle.fill" : "mic.fill")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(notice.isError ? p.danger : p.accentInk)
+            Text(notice.text).font(D.rounded(12, .semibold)).foregroundStyle(p.ink).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 6)
+            if let pane = notice.settingsPane {
+                Pill(symbol: "gearshape.fill", text: "Open Settings", on: true, tint: p.ink) { open(pane) }
+            }
+            Orb(symbol: "xmark", size: 22) { close() }
+        }
+        .padding(.leading, 14).padding(.trailing, 8).padding(.vertical, 9)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(p.card)
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(notice.isError ? p.danger.opacity(0.5) : D.amber.opacity(0.6), lineWidth: 1.2))
+                .shadow(color: p.cardShadow, radius: 14, y: 6)
+        }
+        .padding(.horizontal, 40)
+    }
 }

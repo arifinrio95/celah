@@ -65,6 +65,30 @@ final class AudioTrackWriter {
 final class MeetingRecorder: NSObject, ObservableObject, SCStreamOutput, SCStreamDelegate {
     @Published private(set) var isRecording = false
     @Published private(set) var startedAt: Date?
+    /// True between the click and the first buffer, so the button can show it is working.
+    @Published private(set) var isStarting = false
+    /// Something the user should see on the board (a missing permission, a failure). Cleared by the user or a timer.
+    @Published var notice: Notice?
+
+    struct Notice: Equatable {
+        let text: String
+        var settingsPane: String? = nil          // x-apple.systempreferences anchor, e.g. "Privacy_Microphone"
+        var isError = true
+    }
+
+    /// Shows a notice on the board (and posts a notification as a backup, in case the board is closed).
+    private func show(_ n: Notice) {
+        DispatchQueue.main.async {
+            self.notice = n
+            let shown = n
+            DispatchQueue.main.asyncAfter(deadline: .now() + 9) { if self.notice == shown { self.notice = nil } }
+        }
+        notify(n.text)
+    }
+
+    func openSettings(_ pane: String) {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)") { NSWorkspace.shared.open(url) }
+    }
 
     static let root: URL = {
         let dir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Celah Meetings", isDirectory: true)
@@ -84,30 +108,32 @@ final class MeetingRecorder: NSObject, ObservableObject, SCStreamOutput, SCStrea
     private var systemWriter: AudioTrackWriter?
     private var micWriter: AudioTrackWriter?
     private let systemQueue = DispatchQueue(label: "id.datasans.celah.recording.system")
-    private var starting = false
 
     func toggle() {
         isRecording ? stop() : start()
     }
 
     func start() {
-        guard !isRecording, !starting else { return }
-        starting = true
+        guard !isRecording, !isStarting else { return }
+        isStarting = true
+        notice = nil
+        Log.write("record pressed")
         Task { [weak self] in
             await self?.startCapture()
-            self?.starting = false
+            DispatchQueue.main.async { self?.isStarting = false }
         }
     }
 
     private func startCapture() async {
-        guard CGPreflightScreenCaptureAccess() || CGRequestScreenCaptureAccess() else {
-            notify("Allow Screen Recording for Celah in System Settings, then press Record again.")
-            return
-        }
+        // The microphone is required. System audio (the other side of the call) needs Screen Recording;
+        // without it we still record the microphone and say so, instead of silently doing nothing.
         guard await AVCaptureDevice.requestAccess(for: .audio) else {
-            notify("Allow Microphone for Celah in System Settings, then press Record again.")
+            Log.write("record: microphone not allowed")
+            show(Notice(text: "Celah needs Microphone access to record. Turn it on, then press Record again.", settingsPane: "Privacy_Microphone"))
             return
         }
+        let canCaptureSystem = CGPreflightScreenCaptureAccess() || CGRequestScreenCaptureAccess()
+        if !canCaptureSystem { Log.write("record: screen recording not allowed, microphone only") }
 
         let dir = Self.root.appendingPathComponent("\(Self.stampFormat.string(from: Date())) Meeting", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -119,7 +145,7 @@ final class MeetingRecorder: NSObject, ObservableObject, SCStreamOutput, SCStrea
         let input = eng.inputNode
         let format = input.outputFormat(forBus: 0)
         guard format.sampleRate > 0 else {
-            notify("No microphone input found.")
+            show(Notice(text: "No microphone input found."))
             return
         }
         input.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, _ in micTrack.append(buffer) }
@@ -127,14 +153,14 @@ final class MeetingRecorder: NSObject, ObservableObject, SCStreamOutput, SCStrea
             try eng.start()
         } catch {
             input.removeTap(onBus: 0)
-            notify("Microphone failed: \(error.localizedDescription)")
+            show(Notice(text: "The microphone could not start: \(error.localizedDescription)"))
             return
         }
         engine = eng
         micWriter = micTrack
 
         // System audio. If this fails, the meeting still records the microphone.
-        do {
+        if canCaptureSystem { do {
             let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
             guard let display = content.displays.first else {
                 throw NSError(domain: "Celah", code: 1, userInfo: [NSLocalizedDescriptionKey: "No display found"])
@@ -153,7 +179,10 @@ final class MeetingRecorder: NSObject, ObservableObject, SCStreamOutput, SCStrea
             try await s.startCapture()
             stream = s
         } catch {
-            notify("System audio not recorded, only your microphone: \(error.localizedDescription)")
+            show(Notice(text: "Recording your microphone only. System audio failed: \(error.localizedDescription)", isError: false))
+        } } else {
+            show(Notice(text: "Recording your microphone only. Allow Screen Recording to also capture the other side of the call.",
+                        settingsPane: "Privacy_ScreenCapture", isError: false))
         }
 
         DispatchQueue.main.async {
