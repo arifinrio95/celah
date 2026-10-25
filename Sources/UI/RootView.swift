@@ -50,6 +50,12 @@ struct NotchRootView: View {
                 .frame(width: ctl.collapsedWidth, height: H)
                 .opacity(open ? 0 : 1)
                 .allowsHitTesting(false)
+            if !open && ctl.opensOnClick {
+                Color.black.opacity(0.001)
+                    .frame(width: ctl.collapsedWidth + 12, height: H + chin + 3)
+                    .contentShape(Rectangle())
+                    .onTapGesture { ctl.expand() }
+            }
 
             // the creature, in its chin
             CreatureFace(mood: ctl.mood, look: lookVector(from: faceCenter, to: ctl.mouse),

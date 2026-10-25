@@ -7,6 +7,7 @@ struct SettingsView: View {
     @AppStorage("awake.batteryMin") private var batteryMin = 15
     @AppStorage("awake.thermalGuard") private var thermalGuard = true
     @AppStorage("meeting.prompt") private var meetingPrompt = ""
+    @AppStorage("notch.openDelay") private var openDelay = 0.0
 
     var body: some View {
         Form {
@@ -57,6 +58,15 @@ struct SettingsView: View {
                     .disabled(!settings.prayerNotify)
             }
             Section("Notch") {
+                Picker("Open the board", selection: $openDelay) {
+                    Text("Instantly on hover").tag(0.0)
+                    Text("After 0.3 s of hover").tag(0.3)
+                    Text("After 0.6 s of hover").tag(0.6)
+                    Text("After 1 s of hover").tag(1.0)
+                    Text("Only when I click the notch").tag(-1.0)
+                }
+                Text("A short delay stops the board from opening when you only pass the notch on the way to the menu bar.")
+                    .font(.caption).foregroundStyle(.secondary)
                 Toggle("Show wings for music and prayer", isOn: $settings.wings)
                 Toggle("Open Celah at login", isOn: Binding(
                     get: { SMAppService.mainApp.status == .enabled },

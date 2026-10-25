@@ -54,6 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let path = args[i + 1]
         notch.pinned = true
         notch.expand()
+        if ProcessInfo.processInfo.environment["CELAH_PANEL"] == "apps" { hub.showPanel(.apps) }   // debug: snapshot a panel
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { [self] in
             notch.snapshot(to: path)
             NSApp.terminate(nil)

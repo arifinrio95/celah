@@ -26,6 +26,8 @@
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Celah controls Spotify and Apple Music (play, pause, next track) from the notch.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Celah shows your camera as a mirror, only while the mirror is open.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>

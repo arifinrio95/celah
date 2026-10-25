@@ -9,6 +9,8 @@ struct BoardView: View {
     @EnvironmentObject var awake: KeepAwake
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var recorder: MeetingRecorder
+    @EnvironmentObject var mirror: MirrorCamera
+    @EnvironmentObject var procs: ProcessMonitor
 
     static let gap: CGFloat = 10
     static let weights: [BoardModule: CGFloat] = [.music: 1.32, .usage: 1.0, .prayer: 1.1, .tasks: 1.2, .system: 0.86, .quran: 1.32]
@@ -23,12 +25,19 @@ struct BoardView: View {
                 .offset(y: open ? 0 : -8)
                 .animation(open ? D.springIn.delay(0.1) : .easeIn(duration: 0.1), value: open)
             ZStack {
+                let anyPanel = clip.panelOpen || awake.panelOpen || mirror.panelOpen || procs.panelOpen
                 grid(width: width)
-                    .blur(radius: clip.panelOpen || awake.panelOpen ? 6 : 0)
-                    .scaleEffect(clip.panelOpen || awake.panelOpen ? 0.97 : 1)
-                    .opacity(clip.panelOpen || awake.panelOpen ? 0.35 : 1)
-                    .allowsHitTesting(!(clip.panelOpen || awake.panelOpen))
-                if clip.panelOpen {
+                    .blur(radius: anyPanel ? 6 : 0)
+                    .scaleEffect(anyPanel ? 0.97 : 1)
+                    .opacity(anyPanel ? 0.35 : 1)
+                    .allowsHitTesting(!anyPanel)
+                if mirror.panelOpen {
+                    MirrorPanel(ctl: ctl)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else if procs.panelOpen {
+                    ProcessesPanel()
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else if clip.panelOpen {
                     ClipboardPanel()
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else if awake.panelOpen {
@@ -46,6 +55,8 @@ struct BoardView: View {
             .animation(D.springIn, value: recorder.notice)
             .animation(D.springIn, value: clip.panelOpen)
             .animation(D.springIn, value: awake.panelOpen)
+            .animation(D.springIn, value: mirror.panelOpen)
+            .animation(D.springIn, value: procs.panelOpen)
         }
     }
 
@@ -118,6 +129,7 @@ struct BoardHeader: View {
     @EnvironmentObject var awake: KeepAwake
     @EnvironmentObject var recorder: MeetingRecorder
     @EnvironmentObject var prayer: PrayerService
+    @EnvironmentObject var mirror: MirrorCamera
 
     var body: some View {
         let p = D.p
@@ -133,15 +145,18 @@ struct BoardHeader: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             Spacer().frame(width: chinClearance)
             ViewThatFits(in: .horizontal) {
-                actions(labels: true)
-                actions(labels: false)
+                actions(level: 0)
+                actions(level: 1)
+                actions(level: 2)
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 
-    private func actions(labels: Bool) -> some View {
+    /// Level 0: three labelled pills. Level 1: Clipboard folds into an orb. Level 2: orbs only.
+    private func actions(level: Int) -> some View {
         let p = D.p
+        let labels = level < 2
         return HStack(spacing: 6) {
             if labels {
                 Pill(symbol: recorder.isRecording ? "stop.fill" : "record.circle",
@@ -150,16 +165,22 @@ struct BoardHeader: View {
                     .help(recorder.isRecording ? "Stop recording" : "Record this meeting")
                 Pill(symbol: awake.isActive ? "cup.and.saucer.fill" : "cup.and.saucer",
                      text: awake.isActive ? (awake.endsAt.map { Fmt.short($0.timeIntervalSince(clock.now)) } ?? "Awake") : "Awake",
-                     on: awake.isActive || awake.panelOpen) { awake.panelOpen.toggle(); clip.panelOpen = false }
+                     on: awake.isActive || awake.panelOpen) { (NSApp.delegate as? AppDelegate)?.hub.showPanel(awake.panelOpen ? nil : .awake) }
                     .help("Keep this Mac awake")
-                Pill(symbol: "doc.on.clipboard", text: clip.items.isEmpty ? "Clipboard" : "Clipboard \(clip.items.count)",
-                     on: clip.panelOpen, tint: p.ink) { clip.panelOpen.toggle(); awake.panelOpen = false }
-                    .help("Clipboard history")
+                if level == 0 {
+                    Pill(symbol: "doc.on.clipboard", text: clip.items.isEmpty ? "Clipboard" : "Clipboard \(clip.items.count)",
+                         on: clip.panelOpen, tint: p.ink) { (NSApp.delegate as? AppDelegate)?.hub.showPanel(clip.panelOpen ? nil : .clipboard) }
+                        .help("Clipboard history")
+                } else {
+                    Orb(symbol: "doc.on.clipboard", filled: clip.panelOpen) { (NSApp.delegate as? AppDelegate)?.hub.showPanel(clip.panelOpen ? nil : .clipboard) }.help("Clipboard history")
+                }
             } else {
                 Orb(symbol: recorder.isRecording ? "stop.fill" : "record.circle", filled: recorder.isRecording, tint: p.danger) { recorder.toggle() }
-                Orb(symbol: "cup.and.saucer.fill", filled: awake.isActive) { awake.panelOpen.toggle(); clip.panelOpen = false }
-                Orb(symbol: "doc.on.clipboard", filled: clip.panelOpen) { clip.panelOpen.toggle(); awake.panelOpen = false }
+                Orb(symbol: "cup.and.saucer.fill", filled: awake.isActive) { (NSApp.delegate as? AppDelegate)?.hub.showPanel(awake.panelOpen ? nil : .awake) }
+                Orb(symbol: "doc.on.clipboard", filled: clip.panelOpen) { (NSApp.delegate as? AppDelegate)?.hub.showPanel(clip.panelOpen ? nil : .clipboard) }
             }
+            Orb(symbol: "person.crop.square", filled: mirror.panelOpen, tint: D.amber) { (NSApp.delegate as? AppDelegate)?.hub.showPanel(mirror.panelOpen ? nil : .mirror) }
+                .help("Mirror: the notch camera, mirrored")
             Orb(symbol: "folder") { (NSApp.delegate as? AppDelegate)?.showMeetings() }
                 .help("Meetings: send a recording to Claude or Codex")
             Orb(symbol: "ellipsis") { (NSApp.delegate as? AppDelegate)?.showMenu() }

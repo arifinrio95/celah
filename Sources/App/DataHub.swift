@@ -2,6 +2,8 @@ import AppKit
 import SwiftUI
 import Combine
 
+enum PanelKind { case awake, clipboard, mirror, apps }
+
 /// Owns every data service and decides what the collapsed notch shows.
 final class DataHub {
     let settings = AppSettings()
@@ -15,6 +17,8 @@ final class DataHub {
     let clipboard = ClipboardStore()
     let awake = KeepAwake()
     let recorder = MeetingRecorder()
+    let procs = ProcessMonitor()
+    let mirror = MirrorCamera()
     let notifier = Notifier()
 
     private weak var notch: NotchController?
@@ -38,7 +42,9 @@ final class DataHub {
             .environmentObject(quran)
             .environmentObject(clipboard)
             .environmentObject(awake)
-            .environmentObject(recorder))
+            .environmentObject(recorder)
+            .environmentObject(procs)
+            .environmentObject(mirror))
     }
 
     func start(notch: NotchController) {
@@ -86,7 +92,18 @@ final class DataHub {
         clock.setFast(true)
     }
 
+    /// Opens one panel over the board and closes the others (nil closes all).
+    func showPanel(_ kind: PanelKind?) {
+        awake.panelOpen = kind == .awake
+        clipboard.panelOpen = kind == .clipboard
+        mirror.panelOpen = kind == .mirror
+        procs.panelOpen = kind == .apps
+    }
+
     private func onCollapse() {
+        // the camera and the process sampler never run behind a closed board
+        if mirror.panelOpen { mirror.panelOpen = false }
+        if procs.panelOpen { procs.panelOpen = false }
         clock.setFast(wingIsPrayer)
     }
 

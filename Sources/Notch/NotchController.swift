@@ -141,9 +141,33 @@ final class NotchController: ObservableObject {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: w)
             }
         } else {
-            if collapsedRect.insetBy(dx: -6, dy: -3).contains(p) { expand() }
+            let inside = collapsedRect.insetBy(dx: -6, dy: -3).contains(p)
+            let delay = openDelay
+            if delay < 0 {
+                // click to open: the closed notch takes clicks only while the cursor is on it
+                if panel.ignoresMouseEvents == inside { panel.ignoresMouseEvents = !inside }
+            } else if inside {
+                if !panel.ignoresMouseEvents { panel.ignoresMouseEvents = true }
+                if delay == 0 { expand() }
+                else if expandWork == nil {
+                    let w = DispatchWorkItem { [weak self] in
+                        guard let self else { return }
+                        self.expandWork = nil
+                        if self.collapsedRect.insetBy(dx: -6, dy: -3).contains(NSEvent.mouseLocation) { self.expand() }
+                    }
+                    expandWork = w
+                    DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: w)
+                }
+            } else {
+                if !panel.ignoresMouseEvents { panel.ignoresMouseEvents = true }
+                if let w = expandWork { w.cancel(); expandWork = nil }
+            }
         }
     }
+
+    /// Seconds to wait before the board opens on hover; negative means "only on click". Set in Settings.
+    var openDelay: Double { UserDefaults.standard.object(forKey: "notch.openDelay") == nil ? 0 : UserDefaults.standard.double(forKey: "notch.openDelay") }
+    var opensOnClick: Bool { openDelay < 0 }
 
     private func cancelCollapse() { collapseWork?.cancel(); collapseWork = nil }
 

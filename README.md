@@ -29,12 +29,14 @@ Or download `Celah.zip` from the [latest release](https://github.com/arifinrio95
 | **Clipboard** | History of text and images. Search, pin, click to copy back. Password-manager items are skipped. |
 | **Music** | Spotify and Apple Music. The record slides out of the sleeve and spins while it plays. |
 | **Record** | Records a meeting: system audio and your microphone, as two files. Then hand the folder to Claude Code (session pre-filled) or Codex. |
-| **System** | CPU, RAM and storage as three rings. |
+| **System** | CPU, RAM and storage as three rings. **Apps** opens every running app with its CPU and memory, helpers counted in, heaviest first (sort by memory or CPU). It has a two-step **Force Quit**. |
+| **Mirror** | The notch is where the camera is, so Celah can be a mirror. A mirrored live view with an optional ring light. The camera runs only while the mirror is open. |
 
 Settings let you:
 - Pick which modules sit on the board (the grid re-flows).
 - Switch between **Porcelain** (paper under the black notch) and **Ink** (smoked glass).
 - Choose a city and set reminders.
+- Pick how eagerly the board opens: instantly on hover, after 0.3, 0.6 or 1 second of hover, or only on click.
 
 Nothing is drawn under the camera: buttons and labels stay on either side of the creature.
 
@@ -48,6 +50,7 @@ Celah runs entirely on your Mac. It has no account, no analytics, and no server 
 | Notifications | prayer reminders |
 | Location (optional) | prayer times by GPS instead of a city |
 | Microphone, Screen & System Audio Recording | only when you press Record |
+| Camera | only while the Mirror is open |
 | Accessibility (optional) | auto-paste from the clipboard history |
 | Administrator password, once | lid-closed Keep Awake. It installs `/etc/sudoers.d/celah-pmset`, which allows exactly `pmset -a disablesleep 0/1`. Delete that file to revoke. |
 

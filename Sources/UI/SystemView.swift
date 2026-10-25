@@ -10,7 +10,7 @@ struct SystemView: View {
         let p = D.p
         let mem = stats.memTotal > 0 ? Double(stats.memUsed) / Double(stats.memTotal) : 0
         let disk = stats.diskTotal > 0 ? Double(stats.diskUsed) / Double(stats.diskTotal) : 0
-        Card(title: "System", glyph: "cpu", meta: stats.chip) {
+        Card(title: "System", glyph: "cpu", meta: "Apps", metaAction: { (NSApp.delegate as? AppDelegate)?.hub.showPanel(.apps) }) {
             Spacer(minLength: 6)
             HStack(spacing: 12) {
                 ZStack {
