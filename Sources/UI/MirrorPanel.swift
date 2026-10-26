@@ -21,19 +21,22 @@ struct MirrorPanel: View {
             }
             ZStack {
                 RoundedRectangle(cornerRadius: 26, style: .continuous).fill(Color.black)
-                if mirror.state == .live {
-                    CameraPreview(session: mirror.session)
-                        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-                        .transition(.opacity)
-                } else {
+                CameraPreview(mirror: mirror)
+                    .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                    .opacity(mirror.state == .live ? 1 : 0)
+                if mirror.state != .live {
                     VStack(spacing: 10) {
                         Image(systemName: icon).font(.system(size: 26, weight: .semibold)).foregroundStyle(.white.opacity(0.7))
+                            .symbolEffect(.pulse, isActive: mirror.state == .starting)
                         Text(message).font(D.rounded(12.5, .semibold)).foregroundStyle(.white.opacity(0.75)).multilineTextAlignment(.center)
                         if mirror.state == .denied {
                             Pill(symbol: "gearshape.fill", text: "Open Settings", on: true, tint: D.amber) { mirror.openSettings() }
+                        } else if case .failed = mirror.state {
+                            Pill(symbol: "arrow.clockwise", text: "Try again", on: true, tint: D.amber) { mirror.retry() }
                         }
                     }
                     .padding(20)
+                    .transition(.opacity)
                 }
                 // a ring light: soft white glow around the picture
                 RoundedRectangle(cornerRadius: 26, style: .continuous)
@@ -79,22 +82,45 @@ struct MirrorPanel: View {
     }
 }
 
-/// The live camera, mirrored like a real mirror.
+/// The live camera, mirrored like a real mirror. Frames arrive as IOSurfaces and go straight into a layer.
 struct CameraPreview: NSViewRepresentable {
-    let session: AVCaptureSession
-    func makeNSView(context: Context) -> NSView {
-        let v = NSView()
-        v.wantsLayer = true
-        let layer = AVCaptureVideoPreviewLayer(session: session)
-        layer.videoGravity = .resizeAspectFill
-        if let c = layer.connection, c.isVideoMirroringSupported { c.automaticallyAdjustsVideoMirroring = false; c.isVideoMirrored = true }
-        layer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
-        v.layer = layer
+    let mirror: MirrorCamera
+    func makeNSView(context: Context) -> SurfaceView {
+        let v = SurfaceView()
+        mirror.onFrame = { [weak v] surface in v?.show(surface) }
         return v
     }
-    func updateNSView(_ v: NSView, context: Context) {
-        if let layer = v.layer as? AVCaptureVideoPreviewLayer, let c = layer.connection, c.isVideoMirroringSupported, !c.isVideoMirrored {
-            c.automaticallyAdjustsVideoMirroring = false; c.isVideoMirrored = true
-        }
+    func updateNSView(_ v: SurfaceView, context: Context) {
+        mirror.onFrame = { [weak v] surface in v?.show(surface) }
+    }
+    static func dismantleNSView(_ v: SurfaceView, coordinator: ()) {}
+}
+
+/// A layer-hosting view: its own CALayer, set before wantsLayer, with one sublayer that shows the frames.
+final class SurfaceView: NSView {
+    private let content = CALayer()
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        let root = CALayer()
+        root.masksToBounds = true
+        root.backgroundColor = NSColor.black.cgColor
+        layer = root
+        wantsLayer = true
+        content.contentsGravity = .resizeAspectFill
+        content.setAffineTransform(CGAffineTransform(scaleX: -1, y: 1))     // a mirror, not a camera
+        root.addSublayer(content)
+    }
+    required init?(coder: NSCoder) { fatalError() }
+    override func layout() {
+        super.layout()
+        CATransaction.begin(); CATransaction.setDisableActions(true)
+        content.bounds = bounds
+        content.position = CGPoint(x: bounds.midX, y: bounds.midY)
+        CATransaction.commit()
+    }
+    func show(_ surface: IOSurface) {
+        CATransaction.begin(); CATransaction.setDisableActions(true)
+        content.contents = surface
+        CATransaction.commit()
     }
 }

@@ -35,6 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DistributedNotificationCenter.default().addObserver(self, selector: #selector(showMeetingsFromCLI),
                                                             name: AppDelegate.meetingsNotification, object: nil)
         handleSnapshotFlag()
+        handleMirrorTest()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -46,6 +47,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func togglePin() {
         notch.pinned.toggle()
         if notch.pinned { notch.expand() } else { notch.collapse() }
+    }
+
+    /// `--mirror-test`: opens and closes the mirror three times and logs whether frames arrived. Saves no picture.
+    private func handleMirrorTest() {
+        guard CommandLine.arguments.contains("--mirror-test") else { return }
+        notch.pinned = true
+        notch.expand()
+        func cycle(_ n: Int) {
+            guard n <= 3 else { Log.write("mirror test: done"); NSApp.terminate(nil); return }
+            hub.showPanel(.mirror)
+            let t0 = Date()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) { [self] in
+                Log.write("mirror test \(n): state=\(hub.mirror.state) after \(String(format: "%.1f", Date().timeIntervalSince(t0))) s")
+                hub.showPanel(nil)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { cycle(n + 1) }
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { cycle(1) }
     }
 
     private func handleSnapshotFlag() {
