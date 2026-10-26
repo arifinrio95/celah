@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Celah — there's something living in your notch</title>
-<meta name="description" content="Celah turns the MacBook notch into a board for vibe coders: Keep Awake with the lid closed, AI usage, a Qur'an reader with Mushaf Mode, prayer times, tasks, clipboard, music and meeting recording. Free, native, local.">
+<meta name="description" content="Celah turns the MacBook notch into a board for vibe coders: Keep Awake with the lid closed, AI usage, a Qur'an reader with Mushaf Mode, prayer times, tasks, clipboard, music, meeting recording, a mirror, and every running app with Force Quit. Free, native, local.">
 <meta property="og:title" content="Celah — there's something living in your notch">
 <meta property="og:description" content="The MacBook notch, built for vibe coders. Free for macOS.">
 <meta property="og:image" content="https://arifinrio95.github.io/celah/poster.jpg">
@@ -186,6 +186,41 @@ section{position:relative;z-index:2}
 @keyframes wv{50%{height:90%}}
 .recdot{width:16px;height:16px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 0 rgba(229,72,77,.5);animation:pulse 1.4s infinite;margin-right:14px}
 @keyframes pulse{70%{box-shadow:0 0 0 14px rgba(229,72,77,0)}100%{box-shadow:0 0 0 0 rgba(229,72,77,0)}}
+/* new in 1.1 link */
+.newin{display:inline-flex;align-items:center;gap:10px;margin-top:20px;padding:8px 16px 8px 8px;border-radius:999px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);text-decoration:none;font-size:14px;color:var(--ink2);transition:transform .25s cubic-bezier(.2,1.6,.3,1)}
+.newin:hover{transform:translateY(-2px)}
+.newin b{background:var(--amber);color:#1C1A17;border-radius:999px;padding:3px 10px;font-size:12px;letter-spacing:.02em}
+.newin span{color:var(--ink3)}
+/* apps */
+.apps{display:grid;gap:7px;width:100%;max-width:620px}
+.arow{display:grid;grid-template-columns:18px 1.3fr 1fr 44px 1fr 58px 86px;align-items:center;gap:10px;background:var(--track);border-radius:12px;padding:8px 10px;font-size:13.5px}
+.arow i{width:18px;height:18px;border-radius:5px}
+.arow b{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arow em{font-style:normal;font-family:var(--sans);font-weight:700;color:var(--ink);text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.arow .m{height:5px;border-radius:3px;background:var(--track);position:relative;overflow:hidden}
+.arow .m u{position:absolute;inset:0 auto 0 0;width:var(--w);background:var(--c);border-radius:3px;animation:fill 2s cubic-bezier(.2,1,.3,1) both}
+.arow s{text-decoration:none;text-align:center;font-weight:700;font-size:12px;color:var(--danger);background:rgba(229,72,77,.10);border-radius:999px;padding:5px 0}
+.arow s.ask{color:#fff;background:var(--danger);animation:ask 4s ease-in-out infinite}
+.arow.hot{animation:gone 4s ease-in-out infinite}
+@keyframes ask{0%,30%{background:rgba(229,72,77,.10);color:var(--danger)}35%,80%{background:var(--danger);color:#fff}}
+@keyframes gone{0%,78%{opacity:1;transform:none}88%{opacity:0;transform:translateX(30px)}100%{opacity:1;transform:none}}
+/* mirror */
+.mirror{width:150px;height:150px;border-radius:38px;padding:9px;background:#fff;box-shadow:0 0 0 1px var(--line),0 0 40px rgba(255,255,255,.9),0 0 0 rgba(255,255,255,0);animation:ring 3.2s ease-in-out infinite}
+@keyframes ring{50%{box-shadow:0 0 0 1px var(--line),0 0 60px 8px rgba(255,236,190,.95)}}
+.mirror .glass{width:100%;height:100%;border-radius:30px;background:linear-gradient(160deg,#3a3f52,#1b1d26);position:relative;overflow:hidden}
+.mirror .glass::after{content:"";position:absolute;inset:-30% 40% auto -30%;height:160%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);transform:rotate(25deg);animation:shine 4s ease-in-out infinite}
+@keyframes shine{0%,60%{transform:translateX(-60px) rotate(25deg)}100%{transform:translateX(200px) rotate(25deg)}}
+.mirror .head{position:absolute;left:50%;top:30px;width:46px;height:52px;margin-left:-23px;border-radius:50%;background:#C68A62}
+.mirror .body{position:absolute;left:50%;bottom:-30px;width:104px;height:70px;margin-left:-52px;border-radius:50% 50% 0 0;background:#2B2E35}
+/* pace */
+.f.full{grid-column:span 12;min-height:auto}
+.pace{margin:6px 0 20px}
+.pace .track{position:relative;display:grid;grid-template-columns:repeat(5,1fr);background:var(--track);border-radius:999px;padding:4px;font-size:13px;font-weight:650;color:var(--ink2);text-align:center}
+.pace .track span{position:relative;z-index:1;padding:9px 0;color:#1C1A17}
+@media (prefers-color-scheme:dark){.pace .track span{color:var(--ink2)}}
+.pace .knob{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/5);border-radius:999px;background:var(--amber);box-shadow:0 6px 16px -6px rgba(229,138,23,.7);animation:pace 7s cubic-bezier(.6,0,.3,1) infinite}
+@keyframes pace{0%,14%{transform:translateX(0)}20%,34%{transform:translateX(100%)}40%,54%{transform:translateX(200%)}60%,74%{transform:translateX(300%)}80%,94%{transform:translateX(400%)}100%{transform:translateX(0)}}
+@media (max-width:900px){.f.full{grid-column:span 12}.arow{grid-template-columns:18px 1.2fr 1fr 40px 54px 80px}.arow .m:nth-of-type(2){display:none}}
 /* rings */
 .rings svg{width:140px;height:140px}
 
@@ -268,7 +303,7 @@ footer .li:hover{transform:translateY(-2px);background:#0A66C2;color:#fff}
 </div>
 
 <header class="hero wrap">
-  <div class="kick">Celah · v1.0 · free for macOS</div>
+  <div class="kick">Celah · v1.1 · free for macOS</div>
   <h1>There’s something living in your <em>notch.</em></h1>
   <p class="lead">Celah (Indonesian for <i>the gap</i>) turns the MacBook notch into a board for vibe coders. Keep your agent running with the lid closed, watch your AI limits, read a verse instead of doomscrolling. All one hover away.</p>
   <div class="cta">
@@ -276,6 +311,7 @@ footer .li:hover{transform:translateY(-2px);background:#0A66C2;color:#fff}
     <a class="btn ghost" href="#film"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Watch the film · 60s</a>
   </div>
   <div class="cmd"><code id="cmd">curl -fsSL https://raw.githubusercontent.com/arifinrio95/celah/main/install.sh | bash</code><button id="copy">Copy</button></div>
+  <a class="newin" href="#new"><b>New in 1.1</b> Mirror · Apps &amp; Force Quit · open delay <span>→</span></a>
   <div class="specs">macOS 14 Sonoma or newer · Apple silicon · best on a MacBook with a notch · <a href="https://github.com/arifinrio95/celah">source on GitHub</a></div>
 </header>
 
@@ -337,7 +373,22 @@ footer .li:hover{transform:translateY(-2px);background:#0A66C2;color:#fff}
       <h3>Record the meeting, hand it to your agent.</h3><p>System audio and mic as two files. One click opens Claude Code with the folder and prompt ready.</p></article>
     <article class="f reveal"><span class="tag">09 · System</span>
       <div class="art rings"><svg viewBox="0 0 140 140" aria-hidden="true"><g fill="none" stroke-linecap="round" stroke-width="11" transform="rotate(-90 70 70)"><circle cx="70" cy="70" r="60" stroke="#F5A524" opacity=".18"/><circle cx="70" cy="70" r="60" stroke="#F5A524" stroke-dasharray="117 377"/><circle cx="70" cy="70" r="45" stroke="#E5735A" opacity=".18"/><circle cx="70" cy="70" r="45" stroke="#E5735A" stroke-dasharray="209 283"/><circle cx="70" cy="70" r="30" stroke="#3AA7A0" opacity=".18"/><circle cx="70" cy="70" r="30" stroke="#3AA7A0" stroke-dasharray="113 189"/></g></svg></div>
-      <h3>CPU, RAM, storage.</h3><p>Three rings. That’s it.</p></article>
+      <h3>CPU, RAM, storage.</h3><p>Three rings, always there. Tap <b>Apps</b> for the details.</p></article>
+    <article class="f wide reveal" id="new"><span class="tag">10 · Apps · new</span>
+      <div class="art"><div class="apps">
+        <div class="arow"><i style="background:#10A37F"></i><b>ChatGPT</b><span class="m"><u style="--w:36%;--c:#F5A524"></u></span><em>36%</em><span class="m"><u style="--w:100%;--c:#E5735A"></u></span><em>3.8 GB</em><s>Quit</s></div>
+        <div class="arow hot"><i style="background:#F2B233"></i><b>Google Chrome</b><span class="m"><u style="--w:100%;--c:#F5A524"></u></span><em>105%</em><span class="m"><u style="--w:86%;--c:#E5735A"></u></span><em>3.3 GB</em><s class="ask">Force Quit?</s></div>
+        <div class="arow"><i style="background:#D97757"></i><b>Claude</b><span class="m"><u style="--w:19%;--c:#F5A524"></u></span><em>19%</em><span class="m"><u style="--w:47%;--c:#E5735A"></u></span><em>1.8 GB</em><s>Quit</s></div>
+        <div class="arow"><i style="background:#1DB954"></i><b>Spotify</b><span class="m"><u style="--w:2%;--c:#F5A524"></u></span><em>1%</em><span class="m"><u style="--w:18%;--c:#E5735A"></u></span><em>670 MB</em><s>Quit</s></div>
+      </div></div>
+      <h3>What’s eating your RAM? Force quit it.</h3>
+      <p>Every running app with its CPU and memory, helper processes counted in, heaviest first. Sort by memory or CPU. <b>Quit</b> asks “Force Quit?” before it acts, so nothing closes by accident.</p></article>
+    <article class="f reveal"><span class="tag">11 · Mirror · new</span>
+      <div class="art"><div class="mirror"><div class="glass"><span class="head"></span><span class="body"></span></div></div></div>
+      <h3>The notch is a camera. So it’s a mirror.</h3><p>Check your face before the call. Ring light included. The camera runs only while the mirror is open.</p></article>
+    <article class="f full reveal"><span class="tag">12 · Your pace · new</span>
+      <div class="pace"><div class="track"><span>Instantly</span><span>0.3 s</span><span>0.6 s</span><span>1 s</span><span>On click</span><i class="knob"></i></div></div>
+      <h3>Too eager? Make it wait.</h3><p>Some people only pass the notch on the way to the menu bar. Settings › Notch lets the board open instantly, after a beat of hover, or only when you click. The creature still peeks while it waits.</p></article>
   </div>
 </section>
 
@@ -361,11 +412,13 @@ footer .li:hover{transform:translateY(-2px);background:#0A66C2;color:#fff}
   <div class="steps">
     <div class="step reveal"><h3>Download</h3><p>Run the one-liner above, or grab <a href="https://github.com/arifinrio95/celah/releases/latest/download/Celah.zip">Celah.zip</a> and move Celah.app to Applications.</p></div>
     <div class="step reveal"><h3>Open it</h3><p>Celah isn’t notarized yet. The installer clears the quarantine flag; by hand, right-click Celah.app › Open the first time.</p></div>
-    <div class="step reveal"><h3>Allow what you use</h3><p>Music control, notifications, and only if you want them: location, microphone, accessibility for auto-paste.</p></div>
+    <div class="step reveal"><h3>Allow what you use</h3><p>Music control, notifications, and only if you want them: location, microphone, camera for the mirror, accessibility for auto-paste.</p></div>
   </div>
   <div class="faq" style="margin-top:40px">
     <details class="reveal"><summary>Is my data sent anywhere?</summary><p>No servers of our own, no analytics, no account. For AI usage Celah reads the sign-ins already on your Mac (Claude Code’s Keychain item, Codex’s <code>~/.codex/auth.json</code>) and sends each one only to its own provider to ask for your usage.</p></details>
     <details class="reveal"><summary>How does lid-closed Keep Awake work?</summary><p>The first time, it asks for your administrator password once to install <code>/etc/sudoers.d/celah-pmset</code>, which allows exactly <code>pmset -a disablesleep 0/1</code> and nothing else. Sleep is restored when you turn it off or quit, when the battery drops below 15%, or when the Mac runs hot. Delete that file to revoke.</p></details>
+    <details class="reveal"><summary>The board opens when I only pass the notch.</summary><p>Settings › Notch › <b>Open the board</b>: instantly, after 0.3, 0.6 or 1 second of hover, or only when you click the notch. With click-to-open, the menu bar around the notch keeps working as usual.</p></details>
+    <details class="reveal"><summary>Is the mirror recording me?</summary><p>No. The mirror only shows the live camera on your screen. Nothing is saved or sent, and the camera turns off the moment you close the mirror or the board.</p></details>
     <details class="reveal"><summary>Does it work without a notch?</summary><p>Yes. On displays without a notch the board hangs from the top centre of the screen. It shines on a MacBook with one.</p></details>
     <details class="reveal"><summary>Intel Mac? Older macOS?</summary><p>Celah is built for Apple silicon and needs macOS 14 Sonoma or newer. You can build it yourself from source with the Xcode Command Line Tools.</p></details>
     <details class="reveal"><summary>Claude usage says “not signed in”.</summary><p>Run <code>claude auth login</code> once in Terminal. Celah reads the same sign-in Claude Code uses.</p></details>
