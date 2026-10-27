@@ -32,6 +32,7 @@ final class RemoteService: ObservableObject {
     @Published private(set) var devices: [Device] = []
     @Published private(set) var connected: [String] = []       // names of phones connected right now
     @Published private(set) var warning: String?
+    @Published var panelOpen = false
 
     private let http: RemoteHTTPServer
     private let screen = ScreenStreamer()
@@ -160,6 +161,11 @@ final class RemoteService: ObservableObject {
         pairLink = Self.phoneApp + "#p=" + Self.b64url(json)
         // debug aid for testing pairing without the window: CELAH_REMOTE_LINK_FILE=/path/in/scratch
         if let f = ProcessInfo.processInfo.environment["CELAH_REMOTE_LINK_FILE"], let link = pairLink { try? link.write(toFile: f, atomically: true, encoding: .utf8) }
+    }
+
+    /// Opening the panel always shows a code that still works.
+    func freshenPairing() {
+        if pairLink == nil || (pairExpires ?? .distantPast) < Date().addingTimeInterval(20) { newPairing() }
     }
 
     func revoke(_ d: Device) {

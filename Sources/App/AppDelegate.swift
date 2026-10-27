@@ -16,7 +16,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var tasksWindow: NSWindow?
     private var meetingsWindow: NSWindow?
     private var quranWindow: NSWindow?
-    private var remoteWindow: NSWindow?
     private var termSource: DispatchSourceSignal?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -83,7 +82,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let path = args[i + 1]
         notch.pinned = true
         notch.expand()
-        if ProcessInfo.processInfo.environment["CELAH_PANEL"] == "apps" { hub.showPanel(.apps) }   // debug: snapshot a panel
+        switch ProcessInfo.processInfo.environment["CELAH_PANEL"] {   // debug: snapshot a panel
+        case "apps": hub.showPanel(.apps)
+        case "remote": hub.showPanel(.remote)
+        default: break
+        }   // debug: snapshot a panel
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { [self] in
             notch.snapshot(to: path)
             NSApp.terminate(nil)
@@ -96,7 +99,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         menu.addItem(withTitle: "Task Board", action: #selector(openTasks), keyEquivalent: "t").target = self
         menu.addItem(withTitle: "Qur'an — Mushaf Mode", action: #selector(openQuran), keyEquivalent: "m").target = self
-        menu.addItem(withTitle: hub.remote.connected.isEmpty ? "Phone Remote…" : "Phone Remote (live)…", action: #selector(openRemote), keyEquivalent: "").target = self
         let settings = menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         let login = menu.addItem(withTitle: "Open at login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
@@ -171,32 +173,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         quranWindow?.makeKeyAndOrderFront(nil)
     }
 
+    /// Phone Remote lives on the board; this opens the board on it (`Celah --remote [--shot file.png]`).
     @objc private func openRemoteFromCLI(_ n: Notification) {
         openRemote()
         guard let path = n.userInfo?["shot"] as? String else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [self] in
-            guard let v = remoteWindow?.contentView, let rep = v.bitmapImageRepForCachingDisplay(in: v.bounds) else { return }
-            v.cacheDisplay(in: v.bounds, to: rep)
-            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
-        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [self] in notch.snapshot(to: path) }
     }
 
-    @objc func openRemote() {
-        if remoteWindow == nil {
-            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 440, height: 580),
-                             styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)
-            w.title = "Phone Remote"
-            w.appearance = NSAppearance(named: D.p.dark ? .darkAqua : .aqua)
-            w.titlebarAppearsTransparent = true
-            w.titleVisibility = .hidden
-            w.isReleasedWhenClosed = false
-            w.contentView = NSHostingView(rootView: hub.inject(RemoteWindow()))
-            w.center()
-            remoteWindow = w
-        }
-        notch.collapse()
-        NSApp.activate(ignoringOtherApps: true)
-        remoteWindow?.makeKeyAndOrderFront(nil)
+    func openRemote() {
+        notch.pinned = true
+        notch.expand()
+        hub.showPanel(.remote)
     }
 
     @objc private func showMeetingsFromCLI() { showMeetings() }

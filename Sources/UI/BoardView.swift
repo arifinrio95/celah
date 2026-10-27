@@ -10,6 +10,7 @@ struct BoardView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var recorder: MeetingRecorder
     @EnvironmentObject var mirror: MirrorCamera
+    @EnvironmentObject var remote: RemoteService
     @EnvironmentObject var procs: ProcessMonitor
 
     static let gap: CGFloat = 10
@@ -25,13 +26,16 @@ struct BoardView: View {
                 .offset(y: open ? 0 : -8)
                 .animation(open ? D.springIn.delay(0.1) : .easeIn(duration: 0.1), value: open)
             ZStack {
-                let anyPanel = clip.panelOpen || awake.panelOpen || mirror.panelOpen || procs.panelOpen
+                let anyPanel = clip.panelOpen || awake.panelOpen || mirror.panelOpen || procs.panelOpen || remote.panelOpen
                 grid(width: width)
                     .blur(radius: anyPanel ? 6 : 0)
                     .scaleEffect(anyPanel ? 0.97 : 1)
                     .opacity(anyPanel ? 0.35 : 1)
                     .allowsHitTesting(!anyPanel)
-                if mirror.panelOpen {
+                if remote.panelOpen {
+                    RemotePanel(ctl: ctl)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else if mirror.panelOpen {
                     MirrorPanel(ctl: ctl)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else if procs.panelOpen {
@@ -57,6 +61,7 @@ struct BoardView: View {
             .animation(D.springIn, value: awake.panelOpen)
             .animation(D.springIn, value: mirror.panelOpen)
             .animation(D.springIn, value: procs.panelOpen)
+            .animation(D.springIn, value: remote.panelOpen)
         }
     }
 
@@ -130,6 +135,7 @@ struct BoardHeader: View {
     @EnvironmentObject var recorder: MeetingRecorder
     @EnvironmentObject var prayer: PrayerService
     @EnvironmentObject var mirror: MirrorCamera
+    @EnvironmentObject var remote: RemoteService
 
     var body: some View {
         let p = D.p
@@ -181,6 +187,10 @@ struct BoardHeader: View {
             }
             Orb(symbol: "person.crop.square", filled: mirror.panelOpen, tint: D.amber) { (NSApp.delegate as? AppDelegate)?.hub.showPanel(mirror.panelOpen ? nil : .mirror) }
                 .help("Mirror: the notch camera, mirrored")
+            RemoteOrb(open: remote.panelOpen, live: !remote.connected.isEmpty, on: remote.enabled) {
+                (NSApp.delegate as? AppDelegate)?.hub.showPanel(remote.panelOpen ? nil : .remote)
+            }
+            .help(remote.connected.isEmpty ? "Phone Remote: reach this Mac from your phone" : "Phone Remote: live on \(remote.connected.joined(separator: ", "))")
             Orb(symbol: "folder") { (NSApp.delegate as? AppDelegate)?.showMeetings() }
                 .help("Meetings: send a recording to Claude or Codex")
             Orb(symbol: "ellipsis") { (NSApp.delegate as? AppDelegate)?.showMenu() }
@@ -219,5 +229,33 @@ struct NoticeBanner: View {
                 .shadow(color: p.cardShadow, radius: 14, y: 6)
         }
         .padding(.horizontal, 40)
+    }
+}
+
+/// The phone orb: a green dot while the remote is on, a pulsing ring while a phone is watching.
+struct RemoteOrb: View {
+    let open: Bool
+    let live: Bool
+    let on: Bool
+    let action: () -> Void
+
+    var body: some View {
+        let p = D.p
+        Orb(symbol: live ? "iphone.gen3.radiowaves.left.and.right" : "iphone.gen3", filled: open || live, tint: live ? p.ok : nil, action: action)
+            .overlay(alignment: .topTrailing) {
+                if on && !live {
+                    Circle().fill(p.ok).frame(width: 7, height: 7)
+                        .overlay(Circle().stroke(p.card, lineWidth: 1.5))
+                        .offset(x: 1, y: -1)
+                }
+            }
+            .background {
+                if live {
+                    TimelineView(.animation(minimumInterval: 1 / 30)) { tl in
+                        let k = (tl.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1.6)) / 1.6
+                        Circle().stroke(p.ok.opacity(0.6 * (1 - k)), lineWidth: 2).scaleEffect(1 + k * 0.6)
+                    }
+                }
+            }
     }
 }

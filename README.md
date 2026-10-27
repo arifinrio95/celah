@@ -31,7 +31,7 @@ Or download `Celah.zip` from the [latest release](https://github.com/arifinrio95
 | **Record** | Records a meeting: system audio and your microphone, as two files. Then hand the folder to Claude Code (session pre-filled) or Codex. |
 | **System** | CPU, RAM and storage as three rings. **Apps** opens every running app with its CPU and memory, helpers counted in, heaviest first (sort by memory or CPU). It has a two-step **Force Quit**. |
 | **Mirror** | The notch is where the camera is, so Celah can be a mirror. A mirrored live view with an optional ring light. The camera runs only while the mirror is open. |
-| **Phone Remote** | See and control the Mac from your phone, over any network. ··· › Phone Remote shows a one-time QR code; the phone opens [the Celah phone app](https://arifinrio95.github.io/celah/remote/) in the browser (add it to the Home Screen). Touch and trackpad modes, keyboard, shortcuts, zoom. The notch shows **LIVE** while a phone is connected. |
+| **Phone Remote** | See and control the Mac from your phone, over any network. The phone button on the board shows a one-time QR code; the phone opens [the Celah phone app](https://arifinrio95.github.io/celah/remote/) in the browser (add it to the Home Screen). Touch and trackpad modes, keyboard, shortcuts, zoom. The notch shows **LIVE** while a phone is connected. |
 
 Settings let you:
 - Pick which modules sit on the board (the grid re-flows).
@@ -64,7 +64,7 @@ If Claude shows "not signed in", run `claude auth login` once.
 
 **Phone Remote** is off until you switch it on. When it is on:
 - Celah serves only on `127.0.0.1:47800`. The way in is a Cloudflare quick tunnel (`https://….trycloudflare.com`). Celah downloads `cloudflared` from Cloudflare's GitHub release once and runs it only if it is signed by Cloudflare Inc. (team `68WVV388M8`).
-- Pairing uses a QR code that works once and expires after three minutes. Each phone then gets its own random 256-bit token; the Mac stores only its SHA-256. Remove a phone in the Phone Remote window.
+- Pairing uses a QR code that works once and expires after three minutes. Each phone then gets its own random 256-bit token; the Mac stores only its SHA-256. Remove a phone in the Phone Remote panel.
 - The Mac accepts only requests from the phone app's origin (`https://arifinrio95.github.io`). Ten bad codes or tokens in a minute lock pairing for a while.
 - Quick-tunnel addresses change when the Mac restarts. The Mac then posts the new address to a random ntfy.sh topic, sealed with AES-GCM under a key that only paired phones hold, so phones reconnect without a new QR code.
 - The Mac has to stay awake for the phone to reach it (Keep Awake helps).

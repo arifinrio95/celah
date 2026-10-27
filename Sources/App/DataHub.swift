@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import Combine
 
-enum PanelKind { case awake, clipboard, mirror, apps }
+enum PanelKind { case awake, clipboard, mirror, apps, remote }
 
 /// Owns every data service and decides what the collapsed notch shows.
 final class DataHub {
@@ -103,12 +103,14 @@ final class DataHub {
         clipboard.panelOpen = kind == .clipboard
         mirror.panelOpen = kind == .mirror
         procs.panelOpen = kind == .apps
+        remote.panelOpen = kind == .remote
     }
 
     private func onCollapse() {
         // the camera and the process sampler never run behind a closed board
         if mirror.panelOpen { mirror.panelOpen = false }
         if procs.panelOpen { procs.panelOpen = false }
+        if remote.panelOpen { remote.panelOpen = false }
         clock.setFast(wingIsPrayer)
     }
 
