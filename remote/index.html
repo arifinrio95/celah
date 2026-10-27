@@ -423,9 +423,13 @@
     else if (session) { attempts = 0; connect(); }
   });
 
-  const pm = location.hash.match(/#p=([\w-]+)/);
-  if (pm) { try { pair(decodeObj(pm[1])); } catch (_) { welcome('That QR code could not be read.'); } }
-  else { session = loadSession(); if (session) { saveSession(session); connect(); } else welcome(); }
+  function route() {
+    const pm = location.hash.match(/#p=([\w-]+)/);
+    if (pm) { let p; try { p = decodeObj(pm[1]); } catch (_) { welcome('That QR code could not be read.'); return; } stopSocket(); pair(p); }
+    else if (!session) { session = loadSession(); if (session) { saveSession(session); connect(); } else welcome(); }
+  }
+  addEventListener('hashchange', route);
+  route();
 })();
 </script>
 </body>
