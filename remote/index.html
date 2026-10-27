@@ -222,7 +222,9 @@
     try { sock = new WebSocket(session.u.replace(/^https:/, 'wss:') + '/ws'); } catch (_) { return retry(); }
     sock.binaryType = 'blob';
     ws = sock;
-    sock.onopen = () => sock.send(JSON.stringify({ t: 'auth', token: session.token }));
+    // a dead tunnel address can hang for a long time; give up after 8 s and ask the rendezvous
+    const openTimer = setTimeout(() => { if (sock.readyState !== 1) { try { sock.close(); } catch (_) {} if (ws === sock) { ws = null; retry(); } } }, 8000);
+    sock.onopen = () => { clearTimeout(openTimer); sock.send(JSON.stringify({ t: 'auth', token: session.token })); };
     sock.onmessage = (ev) => {
       if (typeof ev.data !== 'string') { drawFrame(ev.data); return; }
       let m; try { m = JSON.parse(ev.data); } catch (_) { return; }
@@ -238,6 +240,7 @@
       else if (m.t === 'denied') { denied = true; }
     };
     sock.onclose = () => {
+      clearTimeout(openTimer);
       if (ws !== sock) return;
       ws = null; live = false; document.body.classList.remove('live');
       if (denied) { forget(); welcome('This phone was removed on the Mac. Scan a new code to pair again.'); denied = false; return; }
@@ -247,7 +250,7 @@
   async function retry() {
     attempts++;
     connecting(attempts > 2 ? 'Mac is out of reach' : 'Reconnecting…');
-    if (attempts >= 2) {
+    if (attempts >= 1) {
       const url = await rendezvous();
       if (url && session && url !== session.u) { session.u = url; saveSession(session); }
     }
