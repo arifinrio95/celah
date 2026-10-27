@@ -21,6 +21,7 @@ struct RemotePanel: View {
                 qrCard
                 VStack(alignment: .leading, spacing: 10) {
                     status
+                    if !remote.canSee || !remote.canControl { permissions }
                     if remote.devices.isEmpty {
                         guide
                     } else {
@@ -102,6 +103,39 @@ struct RemotePanel: View {
         if let w = remote.warning {
             Text(w).font(D.rounded(11)).foregroundStyle(p.danger).lineLimit(2)
         }
+    }
+
+    /// Shown until both are granted to *this* copy of Celah.
+    @ViewBuilder private var permissions: some View {
+        let p = D.p
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                permChip("Screen Recording", ok: remote.canSee, why: "so the phone can see") { remote.openSettings(.screen) }
+                permChip("Accessibility", ok: remote.canControl, why: "so the phone can click and type") { remote.openSettings(.accessibility) }
+            }
+            Text("Already on in Settings? An older Celah may be listed there. Select Celah, remove it with −, then allow again. Screen Recording takes effect after Celah restarts.")
+                .font(D.rounded(10.5)).foregroundStyle(p.ink3).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func permChip(_ name: String, ok: Bool, why: String, open: @escaping () -> Void) -> some View {
+        let p = D.p
+        return Button(action: open) {
+            HStack(spacing: 6) {
+                Image(systemName: ok ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                    .foregroundStyle(ok ? p.ok : D.amber)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(name).font(D.rounded(11.5, .semibold)).foregroundStyle(p.ink)
+                    Text(ok ? "allowed" : "allow \(why)").font(D.rounded(10)).foregroundStyle(p.ink3)
+                }
+            }
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(p.track.opacity(0.6)))
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(ok ? Color.clear : D.amber.opacity(0.6)))
+        }
+        .buttonStyle(PressScale())
+        .disabled(ok)
     }
 
     private var guide: some View {

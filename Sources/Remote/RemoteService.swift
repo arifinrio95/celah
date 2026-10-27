@@ -15,7 +15,7 @@ final class RemoteService: ObservableObject {
     enum Tunnel: Equatable { case off, preparing(String), connecting, online(String), failed(String) }
     struct Device: Codable, Identifiable, Equatable { let id: String; var name: String; let tokenHash: String; let created: Date; var lastSeen: Date? }
     final class Session: Identifiable {
-        let id: UUID; let socket: RemoteSocket; var device: Device?; var ready = false; var lastSeq = -1
+        let id: UUID; let socket: RemoteSocket; var device: Device?; var ready = false; var lastSeq = -1; var lastWarn = Date.distantPast
         init(_ s: RemoteSocket) { socket = s; id = s.id }
     }
 
@@ -32,7 +32,33 @@ final class RemoteService: ObservableObject {
     @Published private(set) var devices: [Device] = []
     @Published private(set) var connected: [String] = []       // names of phones connected right now
     @Published private(set) var warning: String?
-    @Published var panelOpen = false
+    @Published var panelOpen = false { didSet { if panelOpen != oldValue { watchPermissions(panelOpen) } } }
+    /// What macOS lets this copy of Celah do right now (checked live while the panel is open).
+    @Published private(set) var canSee = CGPreflightScreenCaptureAccess()
+    @Published private(set) var canControl = AXIsProcessTrusted()
+    private var permTimer: Timer?
+
+    private func watchPermissions(_ on: Bool) {
+        permTimer?.invalidate(); permTimer = nil
+        refreshPermissions()
+        guard on else { return }
+        permTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in self?.refreshPermissions() }
+    }
+    func refreshPermissions() {
+        let see = CGPreflightScreenCaptureAccess(), control = AXIsProcessTrusted()
+        if see != canSee { canSee = see }
+        if control != canControl { canControl = control }
+    }
+
+    enum Permission { case screen, accessibility }
+    func openSettings(_ p: Permission) {
+        switch p {
+        case .screen: CGRequestScreenCaptureAccess()
+        case .accessibility: input.askForTrust()
+        }
+        let pane = p == .screen ? "Privacy_ScreenCapture" : "Privacy_Accessibility"
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)")!)
+    }
 
     private let http: RemoteHTTPServer
     private let screen = ScreenStreamer()
@@ -280,8 +306,9 @@ final class RemoteService: ObservableObject {
             if let qv = m["q"] as? Double { screen.quality = CGFloat(max(0.2, min(0.85, qv))) }
         default: break
         }
-        if !input.trusted, ["move", "rel", "click", "down", "scroll", "text", "key"].contains(t) {
-            send(s, ["t": "warn", "msg": "Allow Accessibility for Celah on the Mac so the phone can control it."])
+        if !input.trusted, ["click", "down", "text", "key"].contains(t), s.lastWarn.timeIntervalSinceNow < -8 {
+            s.lastWarn = Date()
+            send(s, ["t": "warn", "msg": "This Mac isn't letting Celah click or type yet. On the Mac, open the phone button on Celah's board and follow the Accessibility hint."])
         }
     }
 

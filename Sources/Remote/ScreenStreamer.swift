@@ -49,7 +49,7 @@ final class ScreenStreamer: NSObject, SCStreamOutput, SCStreamDelegate {
                 Log.write("remote: screen capture \(cfg.width)×\(cfg.height)")
             } catch {
                 Log.write("remote: screen capture failed \(error.localizedDescription)")
-                onError("Screen Recording is off for Celah. Allow it on the Mac in Privacy & Security.")
+                onError("This Mac isn't letting Celah share the screen yet. On the Mac, open the phone button on Celah's board and follow the Screen Recording hint.")
             }
         }
     }
