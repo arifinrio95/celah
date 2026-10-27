@@ -20,6 +20,7 @@ final class DataHub {
     let procs = ProcessMonitor()
     let mirror = MirrorCamera()
     let notifier = Notifier()
+    let remote = RemoteService()
 
     private weak var notch: NotchController?
     private var bag = Set<AnyCancellable>()
@@ -44,7 +45,8 @@ final class DataHub {
             .environmentObject(awake)
             .environmentObject(recorder)
             .environmentObject(procs)
-            .environmentObject(mirror))
+            .environmentObject(mirror)
+            .environmentObject(remote))
     }
 
     func start(notch: NotchController) {
@@ -58,6 +60,8 @@ final class DataHub {
         clipboard.start()
         awake.recoverIfNeeded()
         recorder.$isRecording.sink { [weak self] _ in DispatchQueue.main.async { self?.updateWing() } }.store(in: &bag)
+        remote.$connected.sink { [weak self] _ in DispatchQueue.main.async { self?.updateWing() } }.store(in: &bag)
+        remote.boot()
         awake.$mode.sink { [weak self] _ in DispatchQueue.main.async { self?.updateWing() } }.store(in: &bag)
         usage.refresh(force: false)
 
@@ -75,6 +79,7 @@ final class DataHub {
         clipboard.stop()
         awake.shutdown()
         recorder.shutdown()
+        remote.shutdown()
         clock.stop()
     }
 
@@ -136,6 +141,7 @@ final class DataHub {
                 wing = .awake
             }
         }
+        if !remote.connected.isEmpty { wing = .remote }
         if recorder.isRecording { wing = .recording }
         // the creature's resting mood follows the data
         let worst = (usage.claudeBlock.windows + usage.chatgptBlock.windows).map(\.used).max() ?? 0

@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Celah Remote">
+<meta name="theme-color" content="#0b0b0c">
+<meta name="referrer" content="no-referrer">
+<title>Celah Remote</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+  :root {
+    --lip: #0b0b0c; --paper: #f6f1e8; --paper2: #ece4d6; --ink: #1d1a16; --ink3: #8a8174;
+    --amber: #f5b84c; --ok: #4fbf7a; --danger: #e5484d;
+    --safe-b: env(safe-area-inset-bottom, 0px); --safe-t: env(safe-area-inset-top, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--lip); color: #fff; overflow: hidden;
+    font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif; overscroll-behavior: none; }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+
+  /* the stage */
+  #stage { position: fixed; inset: 0; touch-action: none; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* the lip: Celah's notch, with its creature */
+  #lip { position: fixed; top: calc(var(--safe-t) + 8px); left: 50%; transform: translateX(-50%);
+    background: var(--lip); border-radius: 0 0 18px 18px; padding: 7px 14px 8px; display: flex; gap: 10px; align-items: center;
+    box-shadow: 0 6px 24px rgba(0,0,0,.45); z-index: 5; transition: opacity .3s; font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+  .eyes { display: flex; gap: 6px; }
+  .eye { width: 9px; height: 9px; border-radius: 50%; background: #fff; position: relative; overflow: hidden; transition: height .15s; }
+  .eye i { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #111; left: 2.5px; top: 2.5px; transition: transform .2s; }
+  body.blink .eye { height: 2px; }
+  #dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+  body.live #dot { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  body.live.idle #lip { opacity: .35; }
+
+  /* dock */
+  #dock { position: fixed; left: 50%; bottom: calc(var(--safe-b) + 10px); transform: translateX(-50%); z-index: 6;
+    display: flex; gap: 4px; padding: 5px; border-radius: 22px; background: rgba(246,241,232,.94); color: var(--ink);
+    box-shadow: 0 10px 30px rgba(0,0,0,.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: transform .3s, opacity .3s; }
+  #dock button { min-width: 44px; height: 40px; border-radius: 17px; padding: 0 10px; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 5px; }
+  #dock button.on { background: var(--ink); color: var(--paper); }
+  #dock svg { width: 19px; height: 19px; }
+  body:not(.live) #dock { opacity: 0; pointer-events: none; transform: translate(-50%, 20px); }
+  body.tucked #dock { transform: translate(-50%, calc(100% + 30px)); }
+  #grab { position: fixed; bottom: calc(var(--safe-b) + 2px); left: 50%; width: 60px; height: 22px; transform: translateX(-50%); z-index: 4; display: none; }
+  #grab::after { content: ""; position: absolute; left: 15px; right: 15px; top: 9px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.5); }
+  body.tucked #grab { display: block; }
+
+  /* keys drawer */
+  #keys { position: fixed; left: 8px; right: 8px; bottom: calc(var(--safe-b) + 62px); z-index: 6; display: none;
+    grid-template-columns: repeat(6, 1fr); gap: 5px; padding: 8px; border-radius: 18px; background: rgba(246,241,232,.96); color: var(--ink);
+    box-shadow: 0 10px 30px rgba(0,0,0,.4); max-width: 520px; margin: 0 auto; }
+  #keys.open { display: grid; }
+  #keys button { height: 38px; border-radius: 11px; background: #fff; font-size: 12.5px; font-weight: 700; box-shadow: 0 1px 0 rgba(0,0,0,.08); }
+  #keys button:active { background: var(--paper2); }
+  #kbd { position: fixed; left: -100px; bottom: 0; width: 10px; height: 10px; opacity: 0; font-size: 16px; }
+
+  /* sheets: pairing, status, help */
+  .sheet { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 26px; z-index: 8;
+    background: radial-gradient(120% 80% at 50% 0%, #f9f5ee, var(--paper) 50%, var(--paper2)); color: var(--ink); text-align: center; }
+  .sheet[hidden] { display: none; }
+  .critter { width: 132px; height: 64px; background: var(--lip); border-radius: 0 0 34px 34px; margin: 0 auto 26px; position: relative; display: flex; justify-content: center; gap: 22px; align-items: center; padding-top: 6px;
+    box-shadow: 0 14px 30px rgba(0,0,0,.18); }
+  .critter .eye { width: 18px; height: 18px; } .critter .eye i { width: 8px; height: 8px; left: 5px; top: 5px; }
+  h1 { font-family: ui-serif, "New York", Georgia, serif; font-weight: 600; font-size: 30px; margin: 0 0 10px; letter-spacing: -.01em; }
+  h1 em { color: #c4822a; }
+  p { font-size: 15px; line-height: 1.5; color: #5d564c; margin: 0 auto 10px; max-width: 330px; }
+  .small { font-size: 12.5px; color: var(--ink3); }
+  .cta { margin-top: 18px; padding: 13px 22px; border-radius: 16px; background: var(--ink); color: var(--paper); font-weight: 700; font-size: 15px; }
+  .ghost { margin-top: 10px; padding: 10px 16px; color: #8a8174; font-weight: 600; font-size: 13.5px; }
+  .steps { text-align: left; margin: 14px auto 0; max-width: 320px; font-size: 14px; color: #5d564c; line-height: 1.55; padding-left: 20px; }
+  .spinner { width: 26px; height: 26px; border: 3px solid rgba(0,0,0,.12); border-top-color: var(--ink); border-radius: 50%; animation: spin .8s linear infinite; margin: 14px auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #toast { position: fixed; top: calc(var(--safe-t) + 52px); left: 50%; transform: translate(-50%, -10px); z-index: 9; max-width: 88vw;
+    background: rgba(246,241,232,.97); color: var(--ink); font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.35);
+    opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #touchdot { position: fixed; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; border: 2px solid var(--amber); pointer-events: none; z-index: 4; opacity: 0; transition: opacity .2s; }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="screen"></canvas></div>
+<div id="touchdot"></div>
+
+<div id="lip"><div class="eyes"><div class="eye"><i></i></div><div class="eye"><i></i></div></div><span id="dot"></span><span id="lipText">Celah</span></div>
+
+<div id="keys">
+  <button data-k="escape">esc</button><button data-k="tab">tab</button><button data-k="space" data-m="cmd">⌘ space</button>
+  <button data-k="up">↑</button><button data-k="delete">⌫</button><button data-k="return">⏎</button>
+  <button data-k="c" data-m="cmd">⌘C</button><button data-k="v" data-m="cmd">⌘V</button><button data-k="z" data-m="cmd">⌘Z</button>
+  <button data-k="left">←</button><button data-k="down">↓</button><button data-k="right">→</button>
+  <button data-k="a" data-m="cmd">⌘A</button><button data-k="w" data-m="cmd">⌘W</button><button data-k="q" data-m="cmd">⌘Q</button>
+  <button data-k="tab" data-m="cmd">⌘⇥</button><button data-k="f3">Spaces</button><button data-k="grave" data-m="cmd">⌘`</button>
+</div>
+<input id="kbd" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send">
+
+<nav id="dock">
+  <button id="bMode" title="Touch or trackpad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 11V5a2 2 0 1 1 4 0v5m0-1a2 2 0 1 1 4 0v2m0-1a2 2 0 1 1 4 0v4a7 7 0 0 1-7 7h-1.5a6 6 0 0 1-4.6-2.2L4.6 15a1.8 1.8 0 0 1 2.8-2.3L9 14.5"/></svg><span id="modeText">Touch</span></button>
+  <button id="bZoom" title="Zoom">1×</button>
+  <button id="bKbd" title="Keyboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9"/></svg></button>
+  <button id="bKeys" title="Shortcuts">⌘</button>
+  <button id="bTuck" title="Hide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+</nav>
+<div id="grab"></div>
+<div id="toast"></div>
+
+<section class="sheet" id="sheet">
+  <div class="critter"><div class="eye"><i></i></div><div class="eye"><i></i></div></div>
+  <div id="sheetBody"></div>
+</section>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const canvas = $('screen'), ctx = canvas.getContext('2d', { alpha: false });
+  const STORE = 'celah.remote.v1';
+
+  // ---------- session ----------
+  const b64urlToBytes = (s) => { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
+  const bytesToB64url = (b) => btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const encodeObj = (o) => bytesToB64url(new TextEncoder().encode(JSON.stringify(o)));
+  const decodeObj = (s) => JSON.parse(new TextDecoder().decode(b64urlToBytes(s)));
+
+  let session = null;            // { u, t, k, token, mac }
+  function loadSession() {
+    try { const s = JSON.parse(localStorage.getItem(STORE) || 'null'); if (s && s.token) return s; } catch (_) {}
+    // home-screen apps on iOS keep their own storage; the session also rides in the address's #fragment
+    const m = location.hash.match(/#s=([\w-]+)/);
+    if (m) { try { return decodeObj(m[1]); } catch (_) {} }
+    return null;
+  }
+  function saveSession(s) {
+    session = s;
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (_) {}
+    history.replaceState(null, '', location.pathname + '#s=' + encodeObj(s));
+  }
+  function forget() {
+    try { localStorage.removeItem(STORE); } catch (_) {}
+    session = null;
+    history.replaceState(null, '', location.pathname);
+  }
+
+  // ---------- sheets ----------
+  function sheet(html) { $('sheetBody').innerHTML = html; $('sheet').hidden = false; }
+  function hideSheet() { $('sheet').hidden = true; }
+  function welcome(msg) {
+    sheet(`<h1>Your Mac,<br>in your <em>pocket.</em></h1>
+      ${msg ? `<p style="color:var(--danger)">${msg}</p>` : ''}
+      <p>Pair this phone with Celah once, and you can reach your Mac from anywhere.</p>
+      <ol class="steps"><li>On the Mac, open the notch, tap <b>···</b>, then <b>Phone Remote…</b></li>
+      <li>Switch it on and scan the QR code with this phone's camera.</li>
+      <li>Then Share › <b>Add to Home Screen</b> to keep it one tap away.</li></ol>`);
+  }
+  function connecting(text) {
+    sheet(`<h1>${text}</h1><div class="spinner"></div><p class="small">${session ? 'Looking for ' + esc(session.mac) + '…' : ''}</p>
+      <button class="ghost" id="bForget">Unpair this phone</button>`);
+    $('bForget').onclick = () => { if (confirm('Unpair this phone? You will need to scan a new QR code.')) { forget(); stopSocket(); welcome(); } };
+  }
+  const esc = (s) => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  let toastTimer;
+  function toast(t, ms = 2600) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms); }
+
+  // ---------- pairing ----------
+  async function pair(p) {
+    connecting('Pairing…');
+    const name = guessName();
+    try {
+      const r = await fetch(p.u + '/api/pair', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ code: p.c, name }), cache: 'no-store' });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.token) { history.replaceState(null, '', location.pathname); welcome(esc(j.error || 'The Mac did not answer. Is Phone Remote switched on?')); return; }
+      saveSession({ u: p.u, t: p.t, k: p.k, token: j.token, mac: j.mac || p.m || 'Mac' });
+      connect();
+    } catch (e) {
+      history.replaceState(null, '', location.pathname);
+      welcome('Could not reach the Mac. Make sure Phone Remote is on, then scan a new code.');
+    }
+  }
+  function guessName() {
+    const ua = navigator.userAgent;
+    if (/iPhone/.test(ua)) return 'iPhone'; if (/iPad/.test(ua)) return 'iPad';
+    const m = ua.match(/Android [\d.]+; ([^;)]+)/); if (m) return m[1].trim().slice(0, 40);
+    return 'Phone';
+  }
+
+  // ---------- rendezvous: the Mac's newest address, sealed with the pairing key ----------
+  async function rendezvous() {
+    if (!session) return null;
+    try {
+      const r = await fetch(`https://ntfy.sh/${encodeURIComponent(session.t)}/json?poll=1&since=12h`, { cache: 'no-store' });
+      const lines = (await r.text()).trim().split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch (_) { return null; } })
+        .filter(m => m && m.event === 'message' && m.message);
+      const key = await crypto.subtle.importKey('raw', b64urlToBytes(session.k), 'AES-GCM', false, ['decrypt']);
+      for (const m of lines.reverse()) {
+        try {
+          const sealed = b64urlToBytes(m.message.trim());
+          const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: sealed.slice(0, 12) }, key, sealed.slice(12));
+          const url = new TextDecoder().decode(plain);
+          if (/^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/.test(url)) return url;
+        } catch (_) { /* someone else's noise on the topic */ }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // ---------- socket ----------
+  let ws = null, live = false, attempts = 0, retryTimer = null, macW = 1440, macH = 900, denied = false;
+  function stopSocket() { clearTimeout(retryTimer); if (ws) { ws.onclose = null; try { ws.close(); } catch (_) {} } ws = null; live = false; document.body.classList.remove('live'); }
+  function connect() {
+    if (!session) { welcome(); return; }
+    stopSocket();
+    if (!live) connecting(attempts > 1 ? 'Reconnecting…' : 'Connecting…');
+    let sock;
+    try { sock = new WebSocket(session.u.replace(/^https:/, 'wss:') + '/ws'); } catch (_) { return retry(); }
+    sock.binaryType = 'blob';
+    ws = sock;
+    // a dead tunnel address can hang for a long time; give up after 8 s and ask the rendezvous
+    const openTimer = setTimeout(() => { if (sock.readyState !== 1) { try { sock.close(); } catch (_) {} if (ws === sock) { ws = null; retry(); } } }, 8000);
+    sock.onopen = () => { clearTimeout(openTimer); sock.send(JSON.stringify({ t: 'auth', token: session.token })); };
+    sock.onmessage = (ev) => {
+      if (typeof ev.data !== 'string') { drawFrame(ev.data); return; }
+      let m; try { m = JSON.parse(ev.data); } catch (_) { return; }
+      if (m.t === 'hello') {
+        live = true; attempts = 0; macW = m.w; macH = m.h;
+        session.mac = m.mac; saveSession(session);
+        document.body.classList.add('live'); hideSheet();
+        $('lipText').textContent = m.mac;
+        if (!m.control) toast('View only for now: allow Accessibility for Celah on the Mac to control it.', 5000);
+        send({ t: 'quality', q: sharp ? 0.62 : 0.4 });
+      } else if (m.t === 'cur') { cur.x = m.x; cur.y = m.y; }
+      else if (m.t === 'warn') toast(m.msg, 4500);
+      else if (m.t === 'denied') { denied = true; }
+    };
+    sock.onclose = () => {
+      clearTimeout(openTimer);
+      if (ws !== sock) return;
+      ws = null; live = false; document.body.classList.remove('live');
+      if (denied) { forget(); welcome('This phone was removed on the Mac. Scan a new code to pair again.'); denied = false; return; }
+      retry();
+    };
+  }
+  async function retry() {
+    attempts++;
+    connecting(attempts > 2 ? 'Mac is out of reach' : 'Reconnecting…');
+    if (attempts >= 1) {
+      const url = await rendezvous();
+      if (url && session && url !== session.u) { session.u = url; saveSession(session); }
+    }
+    const wait = Math.min(15000, 800 * Math.pow(1.6, attempts));
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(() => { if (document.visibilityState === 'visible') connect(); }, wait);
+  }
+  const send = (o) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); };
+
+  // ---------- drawing ----------
+  let img = null, dpr = 1, zoom = 1, view = { x: 0, y: 0, w: 1, h: 1 }, cur = { x: .5, y: .5 }, center = { x: .5, y: .5 }, frames = 0;
+  async function drawFrame(blob) {
+    try { const bmp = await createImageBitmap(blob); if (img && img.close) img.close(); img = bmp; frames++; } catch (_) {}
+    send({ t: 'ack' });
+  }
+  function resize() {
+    dpr = Math.min(3, window.devicePixelRatio || 1);
+    canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
+  }
+  function layout() {
+    const W = innerWidth, H = innerHeight, aspect = img ? img.width / img.height : macW / macH;
+    let w = W, h = W / aspect; if (h > H) { h = H; w = H * aspect; }
+    w *= zoom; h *= zoom;
+    // zoomed in, the view eases toward the cursor
+    center.x += (cur.x - center.x) * 0.18; center.y += (cur.y - center.y) * 0.18;
+    let x = W / 2 - center.x * w, y = H / 2 - center.y * h;
+    if (w <= W) x = (W - w) / 2; else x = Math.min(0, Math.max(W - w, x));
+    if (h <= H) y = (H - h) / 2; else y = Math.min(0, Math.max(H - h, y));
+    view = { x, y, w, h };
+  }
+  function loop() {
+    layout();
+    ctx.fillStyle = '#0b0b0c'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (img) { ctx.imageSmoothingQuality = 'high'; ctx.drawImage(img, view.x * dpr, view.y * dpr, view.w * dpr, view.h * dpr); }
+    requestAnimationFrame(loop);
+  }
+  const norm = (px, py) => ({ x: Math.max(0, Math.min(1, (px - view.x) / view.w)), y: Math.max(0, Math.min(1, (py - view.y) / view.h)) });
+
+  // ---------- gestures ----------
+  let mode = 'touch', sharp = true;
+  const touches = new Map();
+  let g = null;                                   // the current gesture
+  let lastTap = { t: 0, x: 0, y: 0, n: 0 };
+  const stage = $('stage');
+
+  function tapCount(x, y) {
+    const now = performance.now();
+    const n = (now - lastTap.t < 380 && Math.hypot(x - lastTap.x, y - lastTap.y) < 34) ? Math.min(3, lastTap.n + 1) : 1;
+    lastTap = { t: now, x, y, n }; return n;
+  }
+  function showDot(x, y) { const d = $('touchdot'); d.style.left = x + 'px'; d.style.top = y + 'px'; d.style.opacity = 1; clearTimeout(showDot.t); showDot.t = setTimeout(() => d.style.opacity = 0, 260); }
+
+  stage.addEventListener('pointerdown', (e) => {
+    stage.setPointerCapture(e.pointerId);
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY });
+    poke();
+    if (touches.size === 1) {
+      const sinceTap = performance.now() - lastTap.t;
+      g = { kind: 'one', t0: performance.now(), moved: false, dragging: false, x0: e.clientX, y0: e.clientY,
+            tapDrag: mode === 'pad' && sinceTap < 300 };
+      g.long = setTimeout(() => {
+        if (g && g.kind === 'one' && !g.moved) {
+          g.kind = 'done'; navigator.vibrate && navigator.vibrate(12);
+          const p = norm(e.clientX, e.clientY);
+          send(mode === 'touch' ? { t: 'click', b: 'r', x: p.x, y: p.y } : { t: 'click', b: 'r' });
+          showDot(e.clientX, e.clientY);
+        }
+      }, 520);
+    } else if (touches.size === 2) {
+      if (g) { clearTimeout(g.long); if (g.dragging) send({ t: 'up' }); }
+      g = { kind: 'two', t0: performance.now(), moved: false, my: midY(), mx: midX() };
+    }
+  });
+  stage.addEventListener('pointermove', (e) => {
+    const t = touches.get(e.pointerId); if (!t || !g) return;
+    const dx = e.clientX - t.x, dy = e.clientY - t.y;
+    t.x = e.clientX; t.y = e.clientY;
+    if (g.kind === 'one') {
+      if (!g.moved && Math.hypot(e.clientX - g.x0, e.clientY - g.y0) > 9) { g.moved = true; clearTimeout(g.long); }
+      if (!g.moved) return;
+      if (mode === 'touch') {
+        const p = norm(e.clientX, e.clientY);
+        if (!g.dragging) { const p0 = norm(g.x0, g.y0); send({ t: 'down', x: p0.x, y: p0.y }); g.dragging = true; }
+        send({ t: 'move', x: p.x, y: p.y });
+      } else {
+        if (g.tapDrag && !g.dragging) { send({ t: 'down' }); g.dragging = true; }
+        const k = (macW / view.w) * 1.35 * (1 + Math.min(1.5, Math.hypot(dx, dy) / 18));   // a little acceleration
+        send({ t: 'rel', dx: dx * k, dy: dy * k });
+      }
+    } else if (g.kind === 'two') {
+      const mx = midX(), my = midY();
+      const sx = mx - g.mx, sy = my - g.my; g.mx = mx; g.my = my;
+      if (Math.abs(sx) + Math.abs(sy) > 0.5) { g.moved = true; send({ t: 'scroll', dx: sx * 2.2, dy: sy * 2.2 }); }
+    }
+  });
+  const end = (e) => {
+    const t = touches.get(e.pointerId); touches.delete(e.pointerId);
+    if (!g || !t) return;
+    if (g.kind === 'one') {
+      clearTimeout(g.long);
+      if (g.dragging) { const p = norm(t.x, t.y); send(mode === 'touch' ? { t: 'up', x: p.x, y: p.y } : { t: 'up' }); }
+      else if (!g.moved && performance.now() - g.t0 < 450) {
+        const n = tapCount(t.x, t.y);
+        if (mode === 'touch') { const p = norm(t.x, t.y); cur.x = p.x; cur.y = p.y; send({ t: 'click', x: p.x, y: p.y, n }); }
+        else send({ t: 'click', n });
+        showDot(t.x, t.y);
+      }
+      g = null;
+    } else if (g.kind === 'two' && touches.size === 0) {
+      if (!g.moved && performance.now() - g.t0 < 350) send(mode === 'touch' ? { t: 'click', b: 'r', ...norm(t.x, t.y) } : { t: 'click', b: 'r' });
+      g = null;
+    }
+  };
+  stage.addEventListener('pointerup', end);
+  stage.addEventListener('pointercancel', (e) => { touches.delete(e.pointerId); if (g && g.dragging) send({ t: 'up' }); g = null; });
+  const midX = () => { let s = 0; touches.forEach(t => s += t.x); return s / touches.size; };
+  const midY = () => { let s = 0; touches.forEach(t => s += t.y); return s / touches.size; };
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
+
+  // ---------- keyboard ----------
+  const kbd = $('kbd');
+  kbd.addEventListener('beforeinput', (e) => {
+    e.preventDefault();
+    if (e.inputType === 'insertText' || e.inputType === 'insertReplacementText') { if (e.data) send({ t: 'text', s: e.data }); }
+    else if (e.inputType === 'deleteContentBackward') send({ t: 'key', k: 'delete' });
+    else if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') send({ t: 'key', k: 'return' });
+  });
+  kbd.addEventListener('keydown', (e) => {
+    const map = { Enter: 'return', Backspace: 'delete', Tab: 'tab', Escape: 'escape', ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
+    if (map[e.key]) { e.preventDefault(); send({ t: 'key', k: map[e.key] }); }
+  });
+  kbd.addEventListener('compositionend', (e) => { if (e.data) send({ t: 'text', s: e.data }); kbd.value = ''; });
+
+  // ---------- dock ----------
+  $('bMode').onclick = () => {
+    mode = mode === 'touch' ? 'pad' : 'touch';
+    $('modeText').textContent = mode === 'touch' ? 'Touch' : 'Trackpad';
+    $('bMode').classList.toggle('on', mode === 'pad');
+    toast(mode === 'touch' ? 'Touch: tap where you want to click. Two fingers scroll.' : 'Trackpad: slide to move, tap to click, double-tap and hold to drag.');
+    try { localStorage.setItem(STORE + '.mode', mode); } catch (_) {}
+  };
+  $('bZoom').onclick = () => { zoom = zoom === 1 ? 2 : zoom === 2 ? 3 : 1; $('bZoom').textContent = zoom + '×'; $('bZoom').classList.toggle('on', zoom > 1); center = { ...cur }; };
+  $('bKbd').onclick = () => { if (document.activeElement === kbd) kbd.blur(); else { kbd.focus(); } };
+  $('bKeys').onclick = () => { $('keys').classList.toggle('open'); $('bKeys').classList.toggle('on'); };
+  $('bTuck').onclick = () => { document.body.classList.add('tucked'); $('keys').classList.remove('open'); $('bKeys').classList.remove('on'); };
+  $('grab').onclick = () => document.body.classList.remove('tucked');
+  $('keys').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    send({ t: 'key', k: b.dataset.k, m: b.dataset.m ? b.dataset.m.split(',') : [] });
+    navigator.vibrate && navigator.vibrate(6);
+  });
+  try { if (localStorage.getItem(STORE + '.mode') === 'pad') $('bMode').onclick(); } catch (_) {}
+  $('toast').classList.remove('show');
+
+  // ---------- the creature ----------
+  let idleTimer;
+  function poke() { document.body.classList.remove('idle'); clearTimeout(idleTimer); idleTimer = setTimeout(() => document.body.classList.add('idle'), 2500); }
+  setInterval(() => { document.body.classList.add('blink'); setTimeout(() => document.body.classList.remove('blink'), 130); }, 4200);
+  function look(x, y) {
+    document.querySelectorAll('.eye i').forEach(i => {
+      const r = i.parentElement.getBoundingClientRect();
+      const a = Math.atan2(y - (r.top + r.height / 2), x - (r.left + r.width / 2)), d = r.width * 0.2;
+      i.style.transform = `translate(${Math.cos(a) * d}px, ${Math.sin(a) * d}px)`;
+    });
+  }
+  addEventListener('pointermove', (e) => look(e.clientX, e.clientY), { passive: true });
+  setInterval(() => { if (live) look(view.x + cur.x * view.w, view.y + cur.y * view.h); }, 120);
+
+  // ---------- go ----------
+  addEventListener('resize', resize); resize(); requestAnimationFrame(loop);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') stopSocket();           // the Mac stops capturing when nobody watches
+    else if (session) { attempts = 0; connect(); }
+  });
+
+  function route() {
+    const pm = location.hash.match(/#p=([\w-]+)/);
+    if (pm) { let p; try { p = decodeObj(pm[1]); } catch (_) { welcome('That QR code could not be read.'); return; } stopSocket(); pair(p); }
+    else if (!session) { session = loadSession(); if (session) { saveSession(session); connect(); } else welcome(); }
+  }
+  addEventListener('hashchange', route);
+  route();
+})();
+</script>
+</body>
+</html>

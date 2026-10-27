@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     static let tasksNotification = Notification.Name("id.datasans.celah.tasks")
     static let quranNotification = Notification.Name("id.datasans.celah.quran")
     static let meetingsNotification = Notification.Name("id.datasans.celah.meetings")
+    static let remoteNotification = Notification.Name("id.datasans.celah.remote")
 
     private(set) var hub: DataHub!
     private(set) var notch: NotchController!
@@ -15,6 +16,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var tasksWindow: NSWindow?
     private var meetingsWindow: NSWindow?
     private var quranWindow: NSWindow?
+    private var remoteWindow: NSWindow?
+    private var termSource: DispatchSourceSignal?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Fonts.register()
@@ -34,6 +37,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                                             name: AppDelegate.quranNotification, object: nil)
         DistributedNotificationCenter.default().addObserver(self, selector: #selector(showMeetingsFromCLI),
                                                             name: AppDelegate.meetingsNotification, object: nil)
+        DistributedNotificationCenter.default().addObserver(self, selector: #selector(openRemoteFromCLI(_:)),
+                                                            name: AppDelegate.remoteNotification, object: nil)
+        // `kill` (or a logout) should still close the tunnel and finish a recording
+        signal(SIGTERM, SIG_IGN)
+        termSource = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
+        termSource?.setEventHandler { NSApp.terminate(nil) }
+        termSource?.resume()
         handleSnapshotFlag()
         handleMirrorTest()
     }
@@ -86,6 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         menu.addItem(withTitle: "Task Board", action: #selector(openTasks), keyEquivalent: "t").target = self
         menu.addItem(withTitle: "Qur'an — Mushaf Mode", action: #selector(openQuran), keyEquivalent: "m").target = self
+        menu.addItem(withTitle: hub.remote.connected.isEmpty ? "Phone Remote…" : "Phone Remote (live)…", action: #selector(openRemote), keyEquivalent: "").target = self
         let settings = menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         let login = menu.addItem(withTitle: "Open at login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
@@ -158,6 +169,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notch.collapse()
         NSApp.activate(ignoringOtherApps: true)
         quranWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    @objc private func openRemoteFromCLI(_ n: Notification) {
+        openRemote()
+        guard let path = n.userInfo?["shot"] as? String else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [self] in
+            guard let v = remoteWindow?.contentView, let rep = v.bitmapImageRepForCachingDisplay(in: v.bounds) else { return }
+            v.cacheDisplay(in: v.bounds, to: rep)
+            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
+        }
+    }
+
+    @objc func openRemote() {
+        if remoteWindow == nil {
+            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 440, height: 580),
+                             styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)
+            w.title = "Phone Remote"
+            w.appearance = NSAppearance(named: D.p.dark ? .darkAqua : .aqua)
+            w.titlebarAppearsTransparent = true
+            w.titleVisibility = .hidden
+            w.isReleasedWhenClosed = false
+            w.contentView = NSHostingView(rootView: hub.inject(RemoteWindow()))
+            w.center()
+            remoteWindow = w
+        }
+        notch.collapse()
+        NSApp.activate(ignoringOtherApps: true)
+        remoteWindow?.makeKeyAndOrderFront(nil)
     }
 
     @objc private func showMeetingsFromCLI() { showMeetings() }

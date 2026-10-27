@@ -159,6 +159,7 @@ struct CollapsedView: View {
     @EnvironmentObject var clock: Clock
     @EnvironmentObject var awake: KeepAwake
     @EnvironmentObject var recorder: MeetingRecorder
+    @EnvironmentObject var remote: RemoteService
 
     var body: some View {
         let wing = (ctl.collapsedWidth - ctl.geometry.notchWidth) / 2
@@ -180,6 +181,12 @@ struct CollapsedView: View {
             }
         case .awake:
             SteamingCup(size: 16, live: true)
+        case .remote:
+            TimelineView(.animation(minimumInterval: 1 / 20)) { tl in
+                let k = 0.5 + 0.5 * abs(sin(tl.date.timeIntervalSinceReferenceDate * 2))
+                Image(systemName: "iphone.gen3.radiowaves.left.and.right").font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(D.amber).shadow(color: D.amber.opacity(0.7), radius: 4 * k)
+            }
         case .music:
             Vinyl(art: music.artwork, size: 22, spinning: music.now?.isPlaying == true)
         case .prayer:
@@ -194,6 +201,9 @@ struct CollapsedView: View {
         case .recording:
             Text(Fmt.short(clock.now.timeIntervalSince(recorder.startedAt ?? clock.now)))
                 .font(D.rounded(12, .bold)).monospacedDigit().foregroundStyle(.white)
+        case .remote:
+            Text("LIVE").font(D.rounded(11, .heavy)).tracking(1).foregroundStyle(.white)
+                .help("A phone is viewing this Mac: \(remote.connected.joined(separator: ", "))")
         case .awake:
             Text(awake.endsAt.map { Fmt.short($0.timeIntervalSince(clock.now)) } ?? "∞")
                 .font(D.rounded(12, .bold)).monospacedDigit().foregroundStyle(.white)

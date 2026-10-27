@@ -15,6 +15,7 @@ enum WingContent: Equatable {
     case music
     case awake
     case recording
+    case remote
     case prayer(String)
 }
 
@@ -70,7 +71,7 @@ final class NotchController: ObservableObject {
     var collapsedWidth: CGFloat {
         switch wing {
         case .none: return geometry.notchWidth
-        case .music, .awake, .recording: return geometry.notchWidth + musicWing * 2
+        case .music, .awake, .recording, .remote: return geometry.notchWidth + musicWing * 2
         case .prayer: return geometry.notchWidth + prayerWing * 2
         }
     }
