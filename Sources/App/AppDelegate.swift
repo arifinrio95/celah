@@ -83,11 +83,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notch.pinned = true
         notch.expand()
         switch ProcessInfo.processInfo.environment["CELAH_PANEL"] {   // debug: snapshot a panel
-        case "apps": hub.showPanel(.apps)
+        case "apps": hub.procs.tab = .running; hub.showPanel(.apps)
+        case "storage":
+            hub.procs.tab = .storage; hub.showPanel(.apps)
+            if ProcessInfo.processInfo.environment["CELAH_SCAN"] != nil { hub.storage.scan() }
         case "remote": hub.showPanel(.remote)
         default: break
         }   // debug: snapshot a panel
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { [self] in
+        let delay = Double(ProcessInfo.processInfo.environment["CELAH_SNAP_DELAY"] ?? "") ?? 4
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [self] in
             notch.snapshot(to: path)
             NSApp.terminate(nil)
         }

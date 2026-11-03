@@ -18,6 +18,7 @@ final class DataHub {
     let awake = KeepAwake()
     let recorder = MeetingRecorder()
     let procs = ProcessMonitor()
+    let storage = StorageStore()
     let mirror = MirrorCamera()
     let notifier = Notifier()
     let remote = RemoteService()
@@ -45,6 +46,7 @@ final class DataHub {
             .environmentObject(awake)
             .environmentObject(recorder)
             .environmentObject(procs)
+            .environmentObject(storage)
             .environmentObject(mirror)
             .environmentObject(remote))
     }

@@ -1,7 +1,54 @@
 import SwiftUI
 
-/// Running apps, heaviest first, with Force Quit. Opens from Apps in the board's top row.
-struct ProcessesPanel: View {
+/// Monitor: what's running (CPU and memory) and what fills the disk (Storage). Opens from the board's top row.
+struct ResourcesPanel: View {
+    @EnvironmentObject var procs: ProcessMonitor
+    @EnvironmentObject var stats: SystemStats
+
+    var body: some View {
+        let p = D.p
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 10) {
+                Text("Monitor").font(D.serif(20).italic()).foregroundStyle(p.ink)
+                HStack(spacing: 3) {
+                    tab("Running", "waveform.path.ecg", .running)
+                    tab("Storage", "internaldrive", .storage)
+                }
+                .padding(2).background(Capsule().fill(p.track))
+                if procs.tab == .running {
+                    Text("\(procs.apps.filter { !$0.isBackground && !$0.isProcess }.count) apps · CPU \(Fmt.pct(stats.cpu))")
+                        .font(D.rounded(11.5, .semibold)).foregroundStyle(p.ink3).lineLimit(1)
+                }
+                Spacer()
+                Orb(symbol: "xmark", size: 24) { procs.panelOpen = false }
+            }
+            if procs.tab == .running { RunningView() } else { StorageView() }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background {
+            RoundedRectangle(cornerRadius: 22, style: .continuous).fill(p.card)
+                .shadow(color: p.cardShadow, radius: 18, y: 10)
+        }
+    }
+
+    private func tab(_ title: String, _ symbol: String, _ t: ProcessMonitor.Tab) -> some View {
+        let p = D.p, on = procs.tab == t
+        return Button { withAnimation(D.snappy) { procs.tab = t } } label: {
+            HStack(spacing: 5) {
+                Image(systemName: symbol).font(.system(size: 10, weight: .bold))
+                Text(title).font(D.rounded(11, .bold))
+            }
+            .foregroundStyle(on ? (p.dark ? Color.black : Color.white) : p.ink3)
+            .padding(.horizontal, 11).frame(height: 24)
+            .background { if on { Capsule().fill(p.ink) } }
+            .contentShape(Capsule())
+        }.buttonStyle(PressScale())
+    }
+}
+
+/// Running apps, heaviest first, with Force Quit. Click CPU or RAM to sort.
+struct RunningView: View {
     @EnvironmentObject var procs: ProcessMonitor
     @EnvironmentObject var stats: SystemStats
     @State private var confirming: String?
@@ -9,18 +56,6 @@ struct ProcessesPanel: View {
     var body: some View {
         let p = D.p
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("Apps").font(D.serif(20).italic()).foregroundStyle(p.ink)
-                Text("\(procs.apps.filter { !$0.isBackground && !$0.isProcess }.count) apps · CPU \(Fmt.pct(stats.cpu))")
-                    .font(D.rounded(11.5, .semibold)).foregroundStyle(p.ink3).lineLimit(1)
-                Spacer()
-                HStack(spacing: 3) {
-                    sortTab("Memory", .memory)
-                    sortTab("CPU", .cpu)
-                }
-                .padding(2).background(Capsule().fill(p.track))
-                Orb(symbol: "xmark", size: 24) { procs.panelOpen = false }
-            }
             ramBreakdown
             if let m = procs.message {
                 Text(m).font(D.rounded(11.5, .semibold)).foregroundStyle(p.danger)
@@ -33,8 +68,8 @@ struct ProcessesPanel: View {
                 let maxRSS = max(1, procs.apps.map(\.rssKB).max() ?? 1)
                 HStack(spacing: 10) {
                     Text("APP").frame(width: 202, alignment: .leading)
-                    Text("CPU").frame(maxWidth: .infinity, alignment: .leading)
-                    Text("RAM").frame(maxWidth: .infinity, alignment: .leading)
+                    sortHeader("CPU", .cpu)
+                    sortHeader("RAM", .memory)
                     Text("").frame(width: 84)
                 }
                 .font(D.label(8.5)).tracking(1).foregroundStyle(p.ink3)
@@ -49,12 +84,6 @@ struct ProcessesPanel: View {
                     .animation(D.snappy, value: procs.apps.map(\.id))
                 }
             }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background {
-            RoundedRectangle(cornerRadius: 22, style: .continuous).fill(p.card)
-                .shadow(color: p.cardShadow, radius: 18, y: 10)
         }
     }
 
@@ -90,15 +119,20 @@ struct ProcessesPanel: View {
         HStack(spacing: 4) { Circle().fill(c).frame(width: 6, height: 6); Text(text) }
     }
 
-    private func sortTab(_ title: String, _ key: ProcessMonitor.SortKey) -> some View {
+    /// A column title that sorts the list, heaviest first.
+    private func sortHeader(_ title: String, _ key: ProcessMonitor.SortKey) -> some View {
         let p = D.p, on = procs.sort == key
         return Button { withAnimation(D.snappy) { procs.sort = key } } label: {
-            Text(title).font(D.rounded(10.5, .bold))
-                .foregroundStyle(on ? (p.dark ? Color.black : Color.white) : p.ink3)
-                .padding(.horizontal, 10).frame(height: 22)
-                .background { if on { Capsule().fill(p.ink) } }
-                .contentShape(Capsule())
-        }.buttonStyle(PressScale())
+            HStack(spacing: 3) {
+                Text(title)
+                Image(systemName: "chevron.down").font(.system(size: 7, weight: .heavy)).opacity(on ? 1 : 0.35)
+            }
+            .foregroundStyle(on ? p.ink : p.ink3)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Sort by \(title), highest first")
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func row(_ app: ProcessMonitor.AppUsage, cpuScale: Double, rssScale: Int) -> some View {

@@ -24,7 +24,13 @@ final class ProcessMonitor: ObservableObject {
     }
     enum SortKey: String { case cpu, memory }
 
-    @Published var panelOpen = false { didSet { panelOpen ? start() : stop() } }
+    enum Tab: String { case running, storage }
+    @Published var panelOpen = false { didSet { updateSampling() } }
+    /// Resources shows either running apps or storage; apps are only sampled while their tab is showing.
+    @Published var tab: Tab = Tab(rawValue: UserDefaults.standard.string(forKey: "resources.tab") ?? "") ?? .running {
+        didSet { UserDefaults.standard.set(tab.rawValue, forKey: "resources.tab"); updateSampling() }
+    }
+    private func updateSampling() { panelOpen && tab == .running ? start() : stop() }
     @Published private(set) var apps: [AppUsage] = []
     @Published var sort: SortKey = SortKey(rawValue: UserDefaults.standard.string(forKey: "apps.sort") ?? "") ?? .memory {
         didSet { UserDefaults.standard.set(sort.rawValue, forKey: "apps.sort"); apps = sorted(apps) }

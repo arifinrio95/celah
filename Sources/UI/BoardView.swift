@@ -39,7 +39,7 @@ struct BoardView: View {
                     MirrorPanel(ctl: ctl)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else if procs.panelOpen {
-                    ProcessesPanel()
+                    ResourcesPanel()
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else if clip.panelOpen {
                     ClipboardPanel()
@@ -172,8 +172,8 @@ struct BoardHeader: View {
                 .help("Clipboard history")
             ToolButton(symbol: "person.crop.square", label: "Mirror", on: mirror.panelOpen, tint: D.amber) { hub()?.showPanel(mirror.panelOpen ? nil : .mirror) }
                 .help("Mirror: the notch camera, mirrored")
-            ToolButton(symbol: "square.stack.3d.up", label: "Apps", on: procs.panelOpen, tint: p.ink) { hub()?.showPanel(procs.panelOpen ? nil : .apps) }
-                .help("Running apps: CPU, memory, Force Quit")
+            ToolButton(symbol: "gauge.with.dots.needle.33percent", label: "Monitor", on: procs.panelOpen, tint: p.ink) { hub()?.showPanel(procs.panelOpen ? nil : .apps) }
+                .help("Monitor: running apps (CPU, memory, Force Quit) and storage (biggest folders and files, clean up)")
             ToolButton(symbol: "folder", label: "Recordings") { (NSApp.delegate as? AppDelegate)?.showMeetings() }
                 .help("Meetings: send a recording to Claude or Codex")
             ToolButton(symbol: "ellipsis", label: "More") { (NSApp.delegate as? AppDelegate)?.showMenu() }
