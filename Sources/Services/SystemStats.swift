@@ -4,6 +4,9 @@ import Darwin
 final class SystemStats: ObservableObject {
     @Published private(set) var cpu: Double = 0
     @Published private(set) var memUsed: UInt64 = 0
+    /// What "RAM in use" is made of, the way Activity Monitor splits it.
+    @Published private(set) var memParts = MemParts(app: 0, wired: 0, compressed: 0)
+    struct MemParts: Equatable { let app: UInt64, wired: UInt64, compressed: UInt64 }
     @Published private(set) var diskUsed: UInt64 = 0
     @Published private(set) var diskFree: UInt64 = 0
     @Published private(set) var diskTotal: UInt64 = 0
@@ -38,7 +41,8 @@ final class SystemStats: ObservableObject {
             }
             DispatchQueue.main.async {
                 if let cpu { self.cpu = cpu }
-                self.memUsed = mem
+                self.memUsed = mem.app + mem.wired + mem.compressed
+                if self.memParts != mem { self.memParts = mem }
                 if let disk { self.diskUsed = disk.used; self.diskFree = disk.free; self.diskTotal = disk.total }
             }
         }
@@ -72,7 +76,7 @@ final class SystemStats: ObservableObject {
         return smoothed
     }
 
-    private static func readMemoryUsed() -> UInt64 {
+    private static func readMemoryUsed() -> MemParts {
         var stats = vm_statistics64()
         var count = mach_msg_type_number_t(MemoryLayout<vm_statistics64>.size / MemoryLayout<integer_t>.size)
         let r = withUnsafeMutablePointer(to: &stats) {
@@ -80,11 +84,11 @@ final class SystemStats: ObservableObject {
                 host_statistics64(mach_host_self(), HOST_VM_INFO64, $0, &count)
             }
         }
-        guard r == KERN_SUCCESS else { return 0 }
+        guard r == KERN_SUCCESS else { return MemParts(app: 0, wired: 0, compressed: 0) }
         let page = UInt64(vm_kernel_page_size)
         // Activity Monitor's "Memory Used": app memory (internal − purgeable) + wired + compressed.
         let app = UInt64(max(0, Int64(stats.internal_page_count) - Int64(stats.purgeable_count)))
-        return (app + UInt64(stats.wire_count) + UInt64(stats.compressor_page_count)) * page
+        return MemParts(app: app * page, wired: UInt64(stats.wire_count) * page, compressed: UInt64(stats.compressor_page_count) * page)
     }
 
     private static func readDisk() -> (used: UInt64, free: UInt64, total: UInt64)? {
