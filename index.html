@@ -220,6 +220,22 @@ section{position:relative;z-index:2}
 @media (prefers-color-scheme:dark){.pace .track span{color:var(--ink2)}}
 .pace .knob{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/5);border-radius:999px;background:var(--amber);box-shadow:0 6px 16px -6px rgba(229,138,23,.7);animation:pace 7s cubic-bezier(.6,0,.3,1) infinite}
 @keyframes pace{0%,14%{transform:translateX(0)}20%,34%{transform:translateX(100%)}40%,54%{transform:translateX(200%)}60%,74%{transform:translateX(300%)}80%,94%{transform:translateX(400%)}100%{transform:translateX(0)}}
+/* storage */
+.stor{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:720px;text-align:left}
+.stor h5{margin:0 0 7px;font:700 10px/1 var(--mono);letter-spacing:.1em;color:var(--ink3);display:flex;gap:6px;align-items:center}
+.stor h5 i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.srow{display:grid;grid-template-columns:16px 1fr auto;gap:9px;align-items:center;background:var(--track);border-radius:11px;padding:8px 10px;margin-bottom:6px;font-size:13px}
+.srow b{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.srow small{display:block;font-size:11px;color:var(--ink3);font-weight:500}
+.srow em{font-style:normal;font-family:var(--sans);font-weight:700;font-variant-numeric:tabular-nums}
+.tick{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--ink4)}
+.tick.on{background:#4FBF7A;border-color:#4FBF7A;position:relative}.tick.on::after{content:"";position:absolute;left:4.5px;top:1.5px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.lock{font-size:11px;color:var(--ink3)}
+.sbar{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12.5px;color:var(--ink3)}
+.sbar span.btn{color:#fff;background:#4FBF7A;border-radius:999px;padding:8px 14px;font-weight:700;white-space:nowrap;animation:sure 5s ease-in-out infinite}
+@keyframes sure{0%,55%{background:#4FBF7A}60%,90%{background:var(--danger)}}
+.sbar span.btn::after{content:"Deep Clean · 6.4 GB";animation:surelabel 5s steps(1) infinite}
+@keyframes surelabel{0%{content:"Deep Clean · 6.4 GB"}58%{content:"Sure? Move 6.4 GB to Trash"}92%{content:"Deep Clean · 6.4 GB"}}
+@media (max-width:760px){.stor{grid-template-columns:1fr}}
 @media (max-width:900px){.f.full{grid-column:span 12}.arow{grid-template-columns:18px 1.2fr 1fr 40px 54px 80px}.arow .m:nth-of-type(2){display:none}}
 /* rings */
 .rings svg{width:140px;height:140px}
@@ -303,7 +319,7 @@ footer .li:hover{transform:translateY(-2px);background:#0A66C2;color:#fff}
 </div>
 
 <header class="hero wrap">
-  <div class="kick">Celah · v1.2 · free for macOS</div>
+  <div class="kick">Celah · v1.3 · free for macOS</div>
   <h1>There’s something living in your <em>notch.</em></h1>
   <p class="lead">Celah (Indonesian for <i>the gap</i>) turns the MacBook notch into a board for vibe coders. Keep your agent running with the lid closed, watch your AI limits, read a verse instead of doomscrolling. All one hover away.</p>
   <div class="cta">
@@ -311,7 +327,7 @@ footer .li:hover{transform:translateY(-2px);background:#0A66C2;color:#fff}
     <a class="btn ghost" href="#film"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Watch the film · 60s</a>
   </div>
   <div class="cmd"><code id="cmd">curl -fsSL https://raw.githubusercontent.com/arifinrio95/celah/main/install.sh | bash</code><button id="copy">Copy</button></div>
-  <a class="newin" href="#new"><b>New in 1.2</b> Every button has a name · Apps up top <span>→</span></a>
+  <a class="newin" href="#new"><b>New in 1.3</b> Storage: see what fills your Mac, clean it safely <span>→</span></a>
   <div class="specs">macOS 14 Sonoma or newer · Apple silicon · best on a MacBook with a notch · <a href="https://github.com/arifinrio95/celah">source on GitHub</a></div>
 </header>
 
@@ -373,8 +389,8 @@ footer .li:hover{transform:translateY(-2px);background:#0A66C2;color:#fff}
       <h3>Record the meeting, hand it to your agent.</h3><p>System audio and mic as two files. One click opens Claude Code with the folder and prompt ready.</p></article>
     <article class="f reveal"><span class="tag">09 · System</span>
       <div class="art rings"><svg viewBox="0 0 140 140" aria-hidden="true"><g fill="none" stroke-linecap="round" stroke-width="11" transform="rotate(-90 70 70)"><circle cx="70" cy="70" r="60" stroke="#F5A524" opacity=".18"/><circle cx="70" cy="70" r="60" stroke="#F5A524" stroke-dasharray="117 377"/><circle cx="70" cy="70" r="45" stroke="#E5735A" opacity=".18"/><circle cx="70" cy="70" r="45" stroke="#E5735A" stroke-dasharray="209 283"/><circle cx="70" cy="70" r="30" stroke="#3AA7A0" opacity=".18"/><circle cx="70" cy="70" r="30" stroke="#3AA7A0" stroke-dasharray="113 189"/></g></svg></div>
-      <h3>CPU, RAM, storage.</h3><p>Three rings, always there. For the app behind the number, <b>Apps</b> is one button up.</p></article>
-    <article class="f wide reveal" id="new"><span class="tag">10 · Apps · moved</span>
+      <h3>CPU, RAM, storage.</h3><p>Three rings, always there. For what’s behind the numbers, <b>Monitor</b> is one button up.</p></article>
+    <article class="f wide reveal"><span class="tag">10 · Monitor › Running</span>
       <div class="art"><div class="apps">
         <div class="arow"><i style="background:#10A37F"></i><b>ChatGPT</b><span class="m"><u style="--w:36%;--c:#F5A524"></u></span><em>36%</em><span class="m"><u style="--w:100%;--c:#E5735A"></u></span><em>3.8 GB</em><s>Quit</s></div>
         <div class="arow hot"><i style="background:#F2B233"></i><b>Google Chrome</b><span class="m"><u style="--w:100%;--c:#F5A524"></u></span><em>105%</em><span class="m"><u style="--w:86%;--c:#E5735A"></u></span><em>3.3 GB</em><s class="ask">Force Quit?</s></div>
@@ -382,13 +398,27 @@ footer .li:hover{transform:translateY(-2px);background:#0A66C2;color:#fff}
         <div class="arow"><i style="background:#1DB954"></i><b>Spotify</b><span class="m"><u style="--w:2%;--c:#F5A524"></u></span><em>1%</em><span class="m"><u style="--w:18%;--c:#E5735A"></u></span><em>670 MB</em><s>Quit</s></div>
       </div></div>
       <h3>What’s eating your RAM? Force quit it.</h3>
-      <p><b>Apps</b> now sits in the top row, where every button wears its name: Record, Awake, Clipboard, Mirror, Apps, Recordings. Every running app with its CPU and memory, helper processes counted in, heaviest first. Sort by memory or CPU. <b>Quit</b> asks “Force Quit?” before it acts, so nothing closes by accident.</p></article>
+      <p>Every running app with its CPU and memory, its helpers counted in, heaviest first. Click the CPU or RAM column to sort. A forgotten dev server or script no app owns gets a row of its own, with the folder it runs in. <b>Quit</b> asks “Force Quit?” before it acts, so nothing closes by accident.</p></article>
     <article class="f reveal"><span class="tag">11 · Mirror</span>
       <div class="art"><div class="mirror"><div class="glass"><span class="head"></span><span class="body"></span></div></div></div>
       <h3>The notch is a camera. So it’s a mirror.</h3><p>Check your face before the call. Ring light included. The camera runs only while the mirror is open.</p></article>
     <article class="f full reveal"><span class="tag">12 · Your pace</span>
       <div class="pace"><div class="track"><span>Instantly</span><span>0.3 s</span><span>0.6 s</span><span>1 s</span><span>On click</span><i class="knob"></i></div></div>
       <h3>Too eager? Make it wait.</h3><p>Some people only pass the notch on the way to the menu bar. Settings › Notch lets the board open instantly, after a beat of hover, or only when you click. The creature still peeks while it waits.</p></article>
+    <article class="f full reveal" id="new"><span class="tag">13 · Monitor › Storage · new</span>
+      <div class="art" style="height:auto;min-height:250px;margin-top:22px"><div class="stor">
+        <div><h5><i style="--c:#4FBF7A"></i>SAFE TO CLEAN · REBUILDS BY ITSELF</h5>
+          <div class="srow"><span class="tick on"></span><b>App caches<small>Skips apps that are open</small></b><em>1.6 GB</em></div>
+          <div class="srow"><span class="tick on"></span><b>Package manager caches<small>npm, Gradle, Cargo, Bun</small></b><em>2.3 GB</em></div>
+          <div class="srow"><span class="tick on"></span><b>Xcode build files<small>DerivedData</small></b><em>2.5 GB</em></div></div>
+        <div><h5><i style="--c:var(--amber)"></i>REVIEW FIRST · YOURS</h5>
+          <div class="srow"><span class="tick"></span><b>Copies of the same file<small>The one you opened last stays</small></b><em>3.4 GB</em></div>
+          <div class="srow"><span class="tick"></span><b>node_modules in idle projects<small>npm install brings them back</small></b><em>1.3 GB</em></div>
+          <div class="srow"><span class="tick"></span><b>Installers in Downloads<small>.dmg and .pkg</small></b><em>820 MB</em></div></div>
+        <div class="sbar"><span>Everything goes to the Trash. Put anything back.</span><span class="btn"></span></div>
+      </div></div>
+      <h3>What’s filling your Mac? Find it, then clear it without fear.</h3>
+      <p>One scan of your home folder (about 40 seconds for a million files) shows the biggest folders, which you can walk into, and the biggest files, with when you last opened them. <b>Clean up</b> splits what can go into <b>Safe</b>, things that rebuild themselves, and <b>Review</b>, things that are yours and start unticked. Celah never deletes anything: Deep Clean only moves what you picked to the Trash, after a second click. Keychains, SSH keys, app data, photo libraries, git projects and your main folders are locked.</p></article>
   </div>
 </section>
 
@@ -418,6 +448,7 @@ footer .li:hover{transform:translateY(-2px);background:#0A66C2;color:#fff}
     <details class="reveal"><summary>Is my data sent anywhere?</summary><p>No servers of our own, no analytics, no account. For AI usage Celah reads the sign-ins already on your Mac (Claude Code’s Keychain item, Codex’s <code>~/.codex/auth.json</code>) and sends each one only to its own provider to ask for your usage.</p></details>
     <details class="reveal"><summary>How does lid-closed Keep Awake work?</summary><p>The first time, it asks for your administrator password once to install <code>/etc/sudoers.d/celah-pmset</code>, which allows exactly <code>pmset -a disablesleep 0/1</code> and nothing else. Sleep is restored when you turn it off or quit, when the battery drops below 15%, or when the Mac runs hot. Delete that file to revoke.</p></details>
     <details class="reveal"><summary>The board opens when I only pass the notch.</summary><p>Settings › Notch › <b>Open the board</b>: instantly, after 0.3, 0.6 or 1 second of hover, or only when you click the notch. With click-to-open, the menu bar around the notch keeps working as usual.</p></details>
+    <details class="reveal"><summary>Can Storage delete something important?</summary><p>No. Scanning only reads. Cleaning only moves what you ticked to the Trash, and only after you click twice, so you can put anything back until you empty the Trash yourself. Some things are locked even from the Trash button: keychains and SSH keys, app data in Library, your main folders (Documents, Desktop and the like), git projects, and photo and music libraries. Hover a lock to see why.</p></details>
     <details class="reveal"><summary>Is the mirror recording me?</summary><p>No. The mirror only shows the live camera on your screen. Nothing is saved or sent, and the camera turns off the moment you close the mirror or the board.</p></details>
     <details class="reveal"><summary>Does it work without a notch?</summary><p>Yes. On displays without a notch the board hangs from the top centre of the screen. It shines on a MacBook with one.</p></details>
     <details class="reveal"><summary>Intel Mac? Older macOS?</summary><p>Celah is built for Apple silicon and needs macOS 14 Sonoma or newer. You can build it yourself from source with the Xcode Command Line Tools.</p></details>
