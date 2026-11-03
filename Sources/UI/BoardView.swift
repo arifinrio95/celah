@@ -21,7 +21,7 @@ struct BoardView: View {
         let width = ctl.trayWidth - 24
         VStack(spacing: 8) {
             BoardHeader(ctl: ctl, chinClearance: ctl.chinWidth + 26)
-                .frame(height: 30)
+                .frame(height: 38)
                 .opacity(open ? 1 : 0)
                 .offset(y: open ? 0 : -8)
                 .animation(open ? D.springIn.delay(0.1) : .easeIn(duration: 0.1), value: open)
@@ -135,7 +135,7 @@ struct BoardHeader: View {
     @EnvironmentObject var recorder: MeetingRecorder
     @EnvironmentObject var prayer: PrayerService
     @EnvironmentObject var mirror: MirrorCamera
-    @EnvironmentObject var remote: RemoteService
+    @EnvironmentObject var procs: ProcessMonitor
 
     var body: some View {
         let p = D.p
@@ -150,52 +150,34 @@ struct BoardHeader: View {
             .padding(.leading, 6)
             .frame(maxWidth: .infinity, alignment: .leading)
             Spacer().frame(width: chinClearance)
-            ViewThatFits(in: .horizontal) {
-                actions(level: 0)
-                actions(level: 1)
-                actions(level: 2)
-            }
+            actions
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 
-    /// Level 0: three labelled pills. Level 1: Clipboard folds into an orb. Level 2: orbs only.
-    private func actions(level: Int) -> some View {
+    /// Every action is an icon with its name under it, so nothing has to be guessed.
+    private var actions: some View {
         let p = D.p
-        let labels = level < 2
-        return HStack(spacing: 6) {
-            if labels {
-                Pill(symbol: recorder.isRecording ? "stop.fill" : "record.circle",
-                     text: recorder.isRecording ? Fmt.short(clock.now.timeIntervalSince(recorder.startedAt ?? clock.now)) : (recorder.isStarting ? "Starting…" : "Record"),
-                     on: recorder.isRecording, tint: p.danger) { recorder.toggle(); ctl.cheer(recorder.isRecording ? .wired : .happy) }
-                    .help(recorder.isRecording ? "Stop recording" : "Record this meeting")
-                Pill(symbol: awake.isActive ? "cup.and.saucer.fill" : "cup.and.saucer",
-                     text: awake.isActive ? (awake.endsAt.map { Fmt.short($0.timeIntervalSince(clock.now)) } ?? "Awake") : "Awake",
-                     on: awake.isActive || awake.panelOpen) { (NSApp.delegate as? AppDelegate)?.hub.showPanel(awake.panelOpen ? nil : .awake) }
-                    .help("Keep this Mac awake")
-                if level == 0 {
-                    Pill(symbol: "doc.on.clipboard", text: clip.items.isEmpty ? "Clipboard" : "Clipboard \(clip.items.count)",
-                         on: clip.panelOpen, tint: p.ink) { (NSApp.delegate as? AppDelegate)?.hub.showPanel(clip.panelOpen ? nil : .clipboard) }
-                        .help("Clipboard history")
-                } else {
-                    Orb(symbol: "doc.on.clipboard", filled: clip.panelOpen) { (NSApp.delegate as? AppDelegate)?.hub.showPanel(clip.panelOpen ? nil : .clipboard) }.help("Clipboard history")
-                }
-            } else {
-                Orb(symbol: recorder.isRecording ? "stop.fill" : "record.circle", filled: recorder.isRecording, tint: p.danger) { recorder.toggle() }
-                Orb(symbol: "cup.and.saucer.fill", filled: awake.isActive) { (NSApp.delegate as? AppDelegate)?.hub.showPanel(awake.panelOpen ? nil : .awake) }
-                Orb(symbol: "doc.on.clipboard", filled: clip.panelOpen) { (NSApp.delegate as? AppDelegate)?.hub.showPanel(clip.panelOpen ? nil : .clipboard) }
-            }
-            Orb(symbol: "person.crop.square", filled: mirror.panelOpen, tint: D.amber) { (NSApp.delegate as? AppDelegate)?.hub.showPanel(mirror.panelOpen ? nil : .mirror) }
+        let hub = { (NSApp.delegate as? AppDelegate)?.hub }
+        return HStack(spacing: 2) {
+            ToolButton(symbol: recorder.isRecording ? "stop.fill" : "record.circle",
+                       label: recorder.isRecording ? Fmt.short(clock.now.timeIntervalSince(recorder.startedAt ?? clock.now)) : (recorder.isStarting ? "Starting…" : "Record"),
+                       on: recorder.isRecording, tint: p.danger) { recorder.toggle(); ctl.cheer(recorder.isRecording ? .wired : .happy) }
+                .help(recorder.isRecording ? "Stop recording" : "Record this meeting")
+            ToolButton(symbol: awake.isActive ? "cup.and.saucer.fill" : "cup.and.saucer",
+                       label: awake.isActive ? (awake.endsAt.map { Fmt.short($0.timeIntervalSince(clock.now)) } ?? "Awake") : "Awake",
+                       on: awake.isActive || awake.panelOpen) { hub()?.showPanel(awake.panelOpen ? nil : .awake) }
+                .help("Keep this Mac awake")
+            ToolButton(symbol: "doc.on.clipboard", label: "Clipboard", on: clip.panelOpen, tint: p.ink) { hub()?.showPanel(clip.panelOpen ? nil : .clipboard) }
+                .help("Clipboard history")
+            ToolButton(symbol: "person.crop.square", label: "Mirror", on: mirror.panelOpen, tint: D.amber) { hub()?.showPanel(mirror.panelOpen ? nil : .mirror) }
                 .help("Mirror: the notch camera, mirrored")
-            RemoteOrb(open: remote.panelOpen, live: !remote.connected.isEmpty, on: remote.enabled) {
-                (NSApp.delegate as? AppDelegate)?.hub.showPanel(remote.panelOpen ? nil : .remote)
-            }
-            .help(remote.connected.isEmpty ? "Phone Remote: reach this Mac from your phone" : "Phone Remote: live on \(remote.connected.joined(separator: ", "))")
-            Orb(symbol: "folder") { (NSApp.delegate as? AppDelegate)?.showMeetings() }
+            ToolButton(symbol: "square.stack.3d.up", label: "Apps", on: procs.panelOpen, tint: p.ink) { hub()?.showPanel(procs.panelOpen ? nil : .apps) }
+                .help("Running apps: CPU, memory, Force Quit")
+            ToolButton(symbol: "folder", label: "Recordings") { (NSApp.delegate as? AppDelegate)?.showMeetings() }
                 .help("Meetings: send a recording to Claude or Codex")
-            Orb(symbol: "ellipsis") { (NSApp.delegate as? AppDelegate)?.showMenu() }
+            ToolButton(symbol: "ellipsis", label: "More") { (NSApp.delegate as? AppDelegate)?.showMenu() }
         }
-        .padding(.trailing, 2)
         .fixedSize()
     }
 
@@ -257,5 +239,36 @@ struct RemoteOrb: View {
                     }
                 }
             }
+    }
+}
+
+/// A header action: an icon with its name in small type under it.
+struct ToolButton: View {
+    let symbol: String
+    let label: String
+    var on = false
+    var tint: Color? = nil
+    var action: () -> Void
+    @State private var hover = false
+
+    var body: some View {
+        let p = D.p
+        Button(action: action) {
+            VStack(spacing: 2) {
+                Image(systemName: symbol)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(on ? (p.dark ? Color.black : Color.white) : (hover ? p.ink : p.ink2))
+                    .frame(width: 34, height: 24)
+                    .background(Capsule().fill(on ? (tint ?? p.accent) : (hover ? p.ink4 : p.track)))
+                Text(label)
+                    .font(D.rounded(8.5, .semibold)).monospacedDigit()
+                    .foregroundStyle(on || hover ? p.ink : p.ink3)
+                    .lineLimit(1).fixedSize()
+            }
+            .frame(width: 46)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressScale())
+        .onHover { hover = $0 }
     }
 }

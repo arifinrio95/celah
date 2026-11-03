@@ -38,7 +38,7 @@ final class NotchController: ObservableObject {
     /// The black lip is as wide as the board; the paper tray hangs under it.
     let lipWidth: CGFloat = 840
     let trayWidth: CGFloat = 812
-    let trayHeight: CGFloat = 402
+    let trayHeight: CGFloat = 410
     let trayOverlap: CGFloat = 10
     let chinWidth: CGFloat = 78
     let chinDepth: CGFloat = 25

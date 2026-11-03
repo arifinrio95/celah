@@ -61,7 +61,7 @@ final class DataHub {
         awake.recoverIfNeeded()
         recorder.$isRecording.sink { [weak self] _ in DispatchQueue.main.async { self?.updateWing() } }.store(in: &bag)
         remote.$connected.sink { [weak self] _ in DispatchQueue.main.async { self?.updateWing() } }.store(in: &bag)
-        remote.boot()
+        // Phone Remote is shelved: it never starts, whatever the saved switch says. Add remote.boot() back to revive it.
         awake.$mode.sink { [weak self] _ in DispatchQueue.main.async { self?.updateWing() } }.store(in: &bag)
         usage.refresh(force: false)
 
