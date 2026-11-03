@@ -29,7 +29,9 @@ Or download `Celah.zip` from the [latest release](https://github.com/arifinrio95
 | **Clipboard** | History of text and images. Search, pin, click to copy back. Password-manager items are skipped. |
 | **Music** | Spotify and Apple Music. The record slides out of the sleeve and spins while it plays. |
 | **Record** | Records a meeting: system audio and your microphone, as two files. Then hand the folder to Claude Code (session pre-filled) or Codex. |
-| **System** | CPU, RAM and storage as three rings. **Apps**, in the top row, opens every running app with its CPU and memory, helpers counted in, heaviest first (sort by memory or CPU). It has a two-step **Force Quit**. |
+| **System** | CPU, RAM and storage as three rings. |
+| **Monitor** | In the top row. **Running** lists every app with its CPU and memory, helpers counted in, heaviest first; click the CPU or RAM column to sort. Big processes no app owns (a dev server, a script) get their own row with their folder. Force Quit takes two clicks. The header splits RAM in use into apps, compressed and macOS. |
+| **Storage** | Inside Monitor. One scan of your home folder shows the disk, the biggest folders (click to walk in) and the biggest files. **Clean up** lists **Safe** items (app caches, package caches, Xcode build files, old logs; they rebuild themselves) and **Review** items (installers and old downloads, idle `node_modules`, big unopened files, copies of the same file, device support files, AI models, iPhone backups). Celah never deletes: Deep Clean and Trash only move what you picked to the Trash, after a second click. |
 | **Mirror** | The notch is where the camera is, so Celah can be a mirror. A mirrored live view with an optional ring light. The camera runs only while the mirror is open. |
 
 Settings let you:
@@ -52,6 +54,7 @@ Celah runs entirely on your Mac. It has no account, no analytics, and no server 
 | Microphone, Screen & System Audio Recording | only when you press Record |
 | Camera | only while the Mirror is open |
 | Accessibility (optional) | auto-paste from the clipboard history |
+| Desktop, Documents, Downloads (optional) | only when you press Scan in Storage |
 | Administrator password, once | lid-closed Keep Awake. It installs `/etc/sudoers.d/celah-pmset`, which allows exactly `pmset -a disablesleep 0/1`. Delete that file to revoke. |
 
 **AI usage**: Celah reads tokens that are already on your Mac and sends each one only to its own provider:
@@ -59,6 +62,16 @@ Celah runs entirely on your Mac. It has no account, no analytics, and no server 
 - Codex's `~/.codex/auth.json`, sent to `chatgpt.com`.
 
 If Claude shows "not signed in", run `claude auth login` once.
+
+**Storage** never deletes anything. Every removal goes to the Trash, and a guard refuses some paths outright, even for the Trash:
+- anything outside your home folder
+- your main folders (Desktop, Documents, Library and so on) and every folder directly in your home
+- git projects, and anything inside `.git`
+- keychains, `.ssh` and other credential folders
+- app data in Library, except caches, logs, Xcode build files and iPhone backups
+- Photos and Music libraries
+
+Scanning skips other apps' sandboxes, so macOS doesn't ask for them.
 
 The app is ad-hoc signed, not notarized:
 - `install.sh` removes the quarantine flag for you.
